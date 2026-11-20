@@ -1,0 +1,15 @@
+# Mots de passe : ne JAMAIS publier ce fichier
+secrets.h
+
+# Fichiers de compilation
+build/
+*.bin
+*.elf
+*.map
+
+# Fichiers d'éditeur et de système
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

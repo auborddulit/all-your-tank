@@ -1,0 +1,292 @@
+// =============================================================================
+//  ALL YOUR TANK ARE BELONG TO US
+//  Surveillance de température de 3 cuves de brasserie
+// =============================================================================
+//  Carte   : Arduino Nano ESP32
+//  Sondes  : 3 × DS18B20 sur un seul bus 1-Wire (borne D2)
+//  Écran   : OLED 2,42" 128×64 SSD1309 en I2C (bornes A4/A5), en portrait
+//  Cloud   : Adafruit IO (tableau de bord + alertes par email)
+//
+//  Ce que fait le programme :
+//    1. se connecte au WiFi puis à Adafruit IO ;
+//    2. récupère le nom et le seuil d'alerte de chaque cuve depuis Adafruit IO
+//       (et les garde en mémoire pour le prochain démarrage) ;
+//    3. lit les 3 sondes en continu et affiche les températures à l'écran ;
+//    4. affiche « ALERTE » (clignotant) si une cuve atteint son seuil ;
+//    5. envoie les températures à Adafruit IO toutes les 20 secondes ;
+//    6. accepte les mises à jour du programme par le WiFi (OTA).
+//
+//  Réglages : config.h        Mots de passe : secrets.h (voir secrets.example.h)
+//  Licence  : MIT (voir le fichier LICENSE à la racine du dépôt)
+// =============================================================================
+
+// --- Bibliothèques (à installer depuis le gestionnaire de bibliothèques de
+//     l'Arduino IDE, voir docs/installation.md)
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>         // mises à jour par le WiFi
+#include <OneWire.h>            // bus des sondes
+#include <DallasTemperature.h>  // sondes DS18B20
+#include <U8g2lib.h>            // écran OLED
+#include <Wire.h>               // bus I2C de l'écran
+#include <Preferences.h>        // mémoire qui survit aux coupures de courant
+#include "AdafruitIO_WiFi.h"    // tableau de bord en ligne
+
+// --- Réglages du projet
+#include "config.h"
+
+// --- Mots de passe (fichier personnel, jamais publié)
+#if __has_include("secrets.h")
+  #include "secrets.h"
+#else
+  #error "Fichier secrets.h manquant : copiez secrets.example.h en secrets.h et remplissez-le."
+#endif
+
+
+// =============================================================================
+//  Objets principaux
+// =============================================================================
+
+AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
+
+// Un feed par cuve pour la température, le nom et le seuil
+AdafruitIO_Feed *feedT[3] = { io.feed(FEED_TEMP_1), io.feed(FEED_TEMP_2), io.feed(FEED_TEMP_3) };
+AdafruitIO_Feed *feedN[3] = { io.feed(FEED_NOM_1), io.feed(FEED_NOM_2), io.feed(FEED_NOM_3) };
+AdafruitIO_Feed *feedS[3] = { io.feed(FEED_SEUIL_1), io.feed(FEED_SEUIL_2), io.feed(FEED_SEUIL_3) };
+
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+ECRAN_TYPE u8g2(ECRAN_ROTATION, U8X8_PIN_NONE);
+Preferences prefs;
+
+DeviceAddress addr[3] = {
+  ADRESSE_SONDE_1,
+  ADRESSE_SONDE_2,
+  ADRESSE_SONDE_3
+};
+
+
+// =============================================================================
+//  État du programme
+// =============================================================================
+
+// Dernière température lue (DEVICE_DISCONNECTED_C = -127 = sonde absente)
+float temp[3] = { DEVICE_DISCONNECTED_C, DEVICE_DISCONNECTED_C, DEVICE_DISCONNECTED_C };
+String nom[3] = NOMS_DEFAUT;
+float seuil[3] = SEUILS_DEFAUT;
+
+unsigned long lastCloud = 0;   // heure du dernier envoi vers Adafruit IO
+bool altAlerte = false;        // fait clignoter le bandeau ALERTE
+
+
+// =============================================================================
+//  Réception des réglages depuis Adafruit IO
+// =============================================================================
+//  Quand on change un nom ou un seuil sur le tableau de bord, Adafruit IO
+//  l'envoie à l'ESP32, qui l'applique et le garde en mémoire.
+
+void majNom(int i, AdafruitIO_Data *d) {
+  String s = d->toString();
+  s.trim();
+  if (s.length() > 0) {
+    if (s.length() > NOM_LONGUEUR_MAX) s = s.substring(0, NOM_LONGUEUR_MAX);
+    nom[i] = s;
+    prefs.putString(("n" + String(i)).c_str(), nom[i]);
+  }
+}
+
+void majSeuil(int i, AdafruitIO_Data *d) {
+  seuil[i] = d->toFloat();
+  prefs.putFloat(("s" + String(i)).c_str(), seuil[i]);
+}
+
+// La bibliothèque Adafruit IO demande une fonction par feed
+void cbN0(AdafruitIO_Data *d) { majNom(0, d); }
+void cbN1(AdafruitIO_Data *d) { majNom(1, d); }
+void cbN2(AdafruitIO_Data *d) { majNom(2, d); }
+void cbS0(AdafruitIO_Data *d) { majSeuil(0, d); }
+void cbS1(AdafruitIO_Data *d) { majSeuil(1, d); }
+void cbS2(AdafruitIO_Data *d) { majSeuil(2, d); }
+
+
+// =============================================================================
+//  Démarrage
+// =============================================================================
+
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+
+  // 1. Relire les noms et seuils gardés en mémoire (sinon valeurs par défaut)
+  prefs.begin(PREFS_NAMESPACE, false);
+  for (int i = 0; i < 3; i++) {
+    nom[i] = prefs.getString(("n" + String(i)).c_str(), NOM_DEFAUT_PREFIXE + String(i + 1));
+    seuil[i] = prefs.getFloat(("s" + String(i)).c_str(), seuil[i]);
+  }
+
+  // 2. Réveil matériel des broches (astuce du montage d'origine)
+  byte pins[] = BROCHES_REVEIL;
+  for (byte p : pins) { OneWire b(p); byte a[8]; b.search(a); }
+  delay(500);
+
+  // 3. Écran, puis connexion à Adafruit IO
+  u8g2.begin();
+  io.connect();
+
+  feedN[0]->onMessage(cbN0); feedN[1]->onMessage(cbN1); feedN[2]->onMessage(cbN2);
+  feedS[0]->onMessage(cbS0); feedS[1]->onMessage(cbS1); feedS[2]->onMessage(cbS2);
+
+  // Écran d'attente avec des points animés tant que la connexion n'est pas faite.
+  // ⚠️ Sans internet, le programme attend ici (voir docs/ameliorations.md).
+  while (io.status() < AIO_CONNECTED) {
+    int nb = ((millis() / 500) % 3) + 1;
+    char pts[10] = "";
+    for (int i = 0; i < nb; i++) strcat(pts, ".");
+    u8g2.firstPage();
+    do {
+      u8g2.setFont(u8g2_font_6x10_tf);
+      u8g2.setCursor(6, 25); u8g2.print("Bonjour !");
+      u8g2.setCursor(4, 55); u8g2.print("Connexion a");
+      u8g2.setCursor(4, 70); u8g2.print("Adafruit");
+      u8g2.setCursor(4, 85); u8g2.print(pts);
+    } while (u8g2.nextPage());
+    delay(100);
+  }
+
+  // 4. Demander à Adafruit IO les derniers noms et seuils enregistrés
+  for (int i = 0; i < 3; i++) {
+    feedN[i]->get();
+    feedS[i]->get();
+    delay(200);
+  }
+
+  // 5. Mises à jour par le WiFi (OTA)
+  ArduinoOTA.setHostname(OTA_HOSTNAME);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA.onStart([]() {
+    u8g2.firstPage();
+    do {
+      u8g2.setFont(u8g2_font_6x10_tf);
+      u8g2.setCursor(4, 55); u8g2.print("Mise a jour");
+      u8g2.setCursor(4, 70); u8g2.print("OTA...");
+    } while (u8g2.nextPage());
+  });
+  ArduinoOTA.begin();
+
+  // 6. Message de bienvenue pendant 2 secondes
+  u8g2.firstPage();
+  do {
+    u8g2.setFont(u8g2_font_6x10_tf);
+    u8g2.setCursor(6, 25); u8g2.print("Bonjour !");
+    u8g2.setCursor(4, 55); u8g2.print("Connexion");
+    u8g2.setCursor(4, 70); u8g2.print("reussie a");
+    u8g2.setCursor(4, 85); u8g2.print("Adafruit !");
+  } while (u8g2.nextPage());
+  delay(2000);
+
+  // 7. Démarrage des sondes
+  sensors.begin();
+  for (int i = 0; i < 3; i++) sensors.setResolution(addr[i], RESOLUTION_SONDES);
+}
+
+
+// =============================================================================
+//  Affichage d'une cuve (une bande de l'écran portrait 64 × 128)
+// =============================================================================
+//  Ligne du haut : nom de la cuve (+ « ! » si alerte) et seuil à droite.
+//  Dessous, en gros : la température (en négatif si alerte),
+//  ou « ERR. SONDE » si la sonde ne répond pas.
+
+void dessinerCuve(int i, int y) {
+  bool alerte = (temp[i] >= seuil[i] && temp[i] != DEVICE_DISCONNECTED_C);
+
+  // Nom de la cuve
+  u8g2.setFont(u8g2_font_5x7_tf);
+  u8g2.setCursor(1, y);
+  char nBuf[12] = "";
+  strcpy(nBuf, nom[i].c_str());
+  if (alerte) strcat(nBuf, "!");
+  u8g2.print(nBuf);
+
+  // Seuil, aligné à droite
+  char sBuf[10] = "";
+  dtostrf(seuil[i], 2, 0, sBuf);
+  strcat(sBuf, "C");
+  u8g2.setCursor(63 - u8g2.getStrWidth(sBuf), y);
+  u8g2.print(sBuf);
+
+  // Température en gros
+  if (temp[i] == DEVICE_DISCONNECTED_C) {
+    u8g2.setFont(u8g2_font_6x10_tf);
+    u8g2.setCursor(2, y + 16);
+    u8g2.print("ERR. SONDE");
+  } else {
+    char tBuf[12] = "";
+    dtostrf(temp[i], 4, 1, tBuf);
+    strcat(tBuf, " C");
+    if (alerte) {
+      u8g2.drawBox(0, y + 3, 64, 16);   // fond blanc...
+      u8g2.setDrawColor(0);             // ...et texte noir
+    }
+    u8g2.setFont(u8g2_font_helvB12_tf);
+    u8g2.setCursor(4, y + 16);
+    u8g2.print(tBuf);
+    u8g2.setDrawColor(1);
+  }
+}
+
+
+// =============================================================================
+//  Boucle principale (tourne en permanence)
+// =============================================================================
+
+void loop() {
+  ArduinoOTA.handle();   // une mise à jour par le WiFi est-elle demandée ?
+  io.run();              // garde la connexion Adafruit IO en vie
+  unsigned long now = millis();
+
+  // 1. Lire les 3 sondes et vérifier les seuils
+  sensors.requestTemperatures();
+  bool alerteGlob = false;
+  for (int i = 0; i < 3; i++) {
+    temp[i] = sensors.getTempC(addr[i]);
+    if (temp[i] >= seuil[i] && temp[i] != DEVICE_DISCONNECTED_C) alerteGlob = true;
+  }
+
+  // 2. Envoyer les températures à Adafruit IO (voir INTERVALLE_ENVOI_MS)
+  if (now - lastCloud >= INTERVALLE_ENVOI_MS) {
+    lastCloud = now;
+    for (int i = 0; i < 3; i++) {
+      if (temp[i] != DEVICE_DISCONNECTED_C) feedT[i]->save(temp[i]);
+    }
+  }
+
+  // 3. Dessiner l'écran : 3 cuves empilées, puis le bandeau d'état en bas
+  u8g2.firstPage();
+  do {
+    dessinerCuve(0, 12); u8g2.drawHLine(0, 33, 64);
+    dessinerCuve(1, 46); u8g2.drawHLine(0, 67, 64);
+    dessinerCuve(2, 80); u8g2.drawHLine(0, 101, 64);
+
+    if (alerteGlob) {
+      // Bandeau ALERTE qui alterne plein / contour à chaque tour de boucle
+      u8g2.setFont(u8g2_font_7x14B_tf);
+      if (altAlerte) {
+        u8g2.drawBox(0, 104, 64, 24);
+        u8g2.setDrawColor(0);
+        u8g2.setCursor(11, 122); u8g2.print("ALERTE");
+        u8g2.setDrawColor(1);
+      } else {
+        u8g2.drawFrame(0, 104, 64, 24);
+        u8g2.setCursor(11, 122); u8g2.print("ALERTE");
+      }
+    } else {
+      u8g2.setFont(u8g2_font_6x12_tf);
+      u8g2.setCursor(6, 120); u8g2.print("Temp OK !");
+    }
+  } while (u8g2.nextPage());
+
+  if (alerteGlob) altAlerte = !altAlerte;
+  delay(50);
+}
