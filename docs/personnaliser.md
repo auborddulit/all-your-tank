@@ -3,15 +3,26 @@
 La plupart des réglages sont dans [`config.h`](../firmware/all-your-tank/config.h).
 Après chaque modification, téléversez à nouveau le programme (par USB ou par le WiFi).
 
-## Renommer une cuve ou changer un seuil
+## Changer la cible ou la fourchette d'une cuve
 
-Pas besoin de toucher au code : faites-le depuis le tableau de bord Adafruit IO
-(feeds `nom-cuveX` et `seuil-cuveX`, voir [adafruit-io.md](adafruit-io.md)).
-L'écran n'affiche que les **6 premiers caractères** du nom. Évitez les accents :
-les polices de l'écran les affichent mal.
+Pas besoin de toucher au code : utilisez les curseurs du tableau de bord Adafruit IO
+(feeds `cible-cuveX` et `fourchette-cuveX`, voir [adafruit-io.md](adafruit-io.md)).
+Par exemple, cible `19` et fourchette `1` : tout va bien entre 18 et 20 °C.
 
-Les valeurs `NOMS_DEFAUT` et `SEUILS_DEFAUT` de `config.h` ne servent qu'au tout
+Les valeurs `CIBLES_DEFAUT` et `FOURCHETTES_DEFAUT` de `config.h` ne servent qu'au tout
 premier démarrage, avant la première synchronisation.
+
+## Renommer une cuve
+
+Les noms sont fixés dans `config.h`, ligne `NOMS_CUVES` (pour garder les 10 feeds du
+compte gratuit pour les cibles et fourchettes). L'écran n'affiche que les
+**6 premiers caractères**. Évitez les accents : les polices de l'écran les affichent mal.
+
+## Changer la marge anti-clignotement
+
+`HYSTERESIS` (0,2 °C par défaut) : une cuve en alerte doit revenir de cette marge à
+l'intérieur de sa fourchette pour que l'alerte s'arrête. Augmentez-la si vous recevez
+trop d'emails quand la température hésite sur une limite.
 
 ## Remplacer ou ajouter une sonde
 
@@ -82,8 +93,8 @@ Le programme est écrit pour 3 cuves. Pour changer ce nombre, il faut modifier
 plusieurs endroits du code :
 
 - les tableaux de taille `[3]` et les boucles `for (int i = 0; i < 3; i++)` ;
-- les feeds et les fonctions `cbN0`… `cbS2` (une par cuve) ;
-- les adresses de sondes, noms et seuils dans `config.h` ;
+- les feeds et les fonctions `cbC0`… `cbF2` (une par cuve), en restant sous 10 feeds sur le compte gratuit ;
+- les adresses de sondes, noms, cibles et fourchettes dans `config.h` ;
 - la mise en page de l'écran dans `loop()` (une bande de 34 pixels par cuve).
 
 Ce chantier figure dans la liste des [améliorations](ameliorations.md).

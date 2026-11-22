@@ -24,7 +24,7 @@ C'est pour cela que `config.h` indique **5** pour la borne **D2**.
 
 Le « réveil des broches » du démarrage agit sur plusieurs de ces bornes : avant de
 brancher autre chose sur D3 à D5 ou A1 à A3, lisez
-[ameliorations.md](ameliorations.md#3-comprendre-et-si-possible-retirer-le--réveil-des-broches-).
+[ameliorations.md](ameliorations.md#2-comprendre-et-si-possible-retirer-le--réveil-des-broches-).
 
 Le brochage complet est sur la
 [fiche officielle d'Arduino](https://docs.arduino.cc/resources/pinouts/ABX00083-full-pinout.pdf).
@@ -42,12 +42,12 @@ La sonde de cette cuve ne répond pas.
 4. Si **toutes** les sondes sont en erreur, le problème vient du bus commun
    (résistance, fil jaune, borne D2) ou du numéro de broche.
 
-## Une sonde affiche 85,0 °C
+## Une sonde reste sur « ERR. SONDE » ou affiche 85 °C
 
-85 °C est la valeur qu'une DS18B20 donne avant sa première vraie mesure. Si elle
-reste affichée, c'est en général un problème d'alimentation ou de contact sur la
-sonde : vérifiez les fils rouge et noir. Attention, cette valeur peut déclencher une
-fausse alerte.
+85 °C est la valeur qu'une DS18B20 donne avant sa première vraie mesure. Le
+programme l'ignore et affiche **ERR. SONDE** à la place, pour éviter une fausse
+alerte. Si ça dure, c'est en général un problème d'alimentation ou de contact sur la
+sonde : vérifiez les fils rouge et noir.
 
 ## Les températures sont instables ou disparaissent par moments
 

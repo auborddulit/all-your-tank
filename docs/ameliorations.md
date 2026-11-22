@@ -15,13 +15,7 @@ sondes fonctionnent.
 Idée : limiter l'attente (par exemple 30 secondes), puis démarrer l'affichage local et
 laisser `io.run()` retenter la connexion en arrière-plan.
 
-### 2. Ignorer la valeur 85 °C
-
-Une sonde DS18B20 renvoie 85 °C quand sa mesure n'est pas prête ou qu'elle a mal été
-alimentée. Cette valeur peut déclencher une fausse alerte et polluer les graphiques.
-Idée : la traiter comme une erreur de lecture.
-
-### 3. Comprendre et, si possible, retirer le « réveil des broches »
+### 2. Comprendre et, si possible, retirer le « réveil des broches »
 
 Au démarrage, le programme crée un bus OneWire sur les numéros 2, 3, 4 et 5
 (`BROCHES_REVEIL`) pour « réveiller » le matériel. Cette astuce a été trouvée pendant
@@ -37,7 +31,7 @@ alors la mauvaise borne, et c'est `OneWire(2)` de l'astuce qui préparerait la b
 Si c'est bien ça, passer le réglage sur **By GPIO number (legacy)** rendrait l'astuce
 inutile. À tester, après plusieurs coupures de courant, avant de la supprimer.
 
-### 4. Lire les sondes sans bloquer
+### 3. Lire les sondes sans bloquer
 
 `sensors.requestTemperatures()` attend la fin de la mesure (environ 375 ms en 11 bits)
 à chaque tour de boucle. Pendant ce temps, rien d'autre ne se passe. Idée : utiliser
@@ -45,50 +39,47 @@ inutile. À tester, après plusieurs coupures de courant, avant de la supprimer.
 
 ## Alertes
 
-### 5. Alerte « trop froid »
+### 4. Prévenir aussi quand une sonde ne répond plus
 
-L'alerte ne se déclenche que si la température **dépasse** le seuil. En fermentation,
-une cuve trop froide est aussi un problème. Idée : un seuil bas et un seuil haut par cuve.
+Une sonde débranchée affiche « ERR. SONDE » à l'écran, mais ne déclenche pas d'email.
+Idée : ajouter un code spécial dans le feed `alerte` (par exemple 9) quand une sonde
+est en erreur depuis plus de quelques minutes.
 
-### 6. Éviter le clignotement autour du seuil
+### 5. Renommer les cuves depuis le tableau de bord
 
-Quand la température oscille autour du seuil (par exemple 35,4 / 35,5 / 35,4 °C),
-l'alerte s'allume et s'éteint sans cesse. Idée : une petite marge (hystérésis), par
-exemple l'alerte ne s'éteint qu'à 0,3 °C sous le seuil.
-
-### 7. Afficher le seuil avec sa décimale
-
-Le seuil est affiché arrondi à l'entier : un seuil de 35,5 °C apparaît « 36C » à
-l'écran, alors que l'alerte se déclenche dès 35,5 °C. Idée : afficher une décimale.
-
-### 8. Un seul réglage de seuil pour l'écran et les emails
-
-Le seuil de l'écran (feed `seuil-cuveX`) et celui des emails (action Adafruit IO) sont
-deux réglages séparés. Idée : faire envoyer l'alerte par l'ESP32 lui-même sur un feed
-dédié, et déclencher l'email à partir de ce feed.
+Les noms sont fixés dans `config.h`, car les 10 feeds du compte gratuit servent aux
+températures, cibles, fourchettes et alertes. Avec Adafruit IO+ (feeds illimités),
+on pourrait remettre un feed de nom par cuve.
 
 ## Confort
 
-### 9. Nombre de cuves réglable
+### 6. Nombre de cuves réglable
 
 Passer de 3 cuves fixes à un nombre réglable dans `config.h` (tableaux, feeds et mise
 en page calculés à partir de ce nombre).
 
-### 10. Logo au démarrage
+### 7. Logo au démarrage
 
 Les écrans sont prêts dans `ecrans_demarrage.h` : il reste à choisir lequel afficher et
 à l'activer par une option de `config.h`. Voir [personnaliser.md](personnaliser.md#afficher-un-logo-au-démarrage).
 
-### 11. Fichier du support imprimé en 3D
+### 8. Fichier du support imprimé en 3D
 
 Publier le fichier du support de cartes visible sur les photos.
 
 ## Matériel
 
-### 12. Alimentation dans la plage prévue
+### 9. Alimentation dans la plage prévue
 
 Voir le [point de vigilance](materiel.md#point-de-vigilance--lalimentation-5-v) :
 une alimentation 12 V sur VIN serait plus conforme à la notice du Nano ESP32.
+
+## Déjà fait
+
+- **Cible ± fourchette** par cuve, réglables avec des curseurs, au lieu d'un simple seuil.
+- **Alerte trop chaud et trop froid**, avec une marge anti-clignotement (`HYSTERESIS`).
+- **Un seul réglage pour l'écran et les emails** : l'ESP32 envoie lui-même le feed `alerte`.
+- **Valeur 85 °C ignorée** : elle s'affiche comme une erreur de sonde.
 
 ## Pour plus tard
 

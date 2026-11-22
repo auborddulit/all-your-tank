@@ -9,11 +9,13 @@
 //
 //  Ce que fait le programme :
 //    1. se connecte au WiFi puis à Adafruit IO ;
-//    2. récupère le nom et le seuil d'alerte de chaque cuve depuis Adafruit IO
+//    2. récupère la température cible et la fourchette de chaque cuve
 //       (et les garde en mémoire pour le prochain démarrage) ;
 //    3. lit les 3 sondes en continu et affiche les températures à l'écran ;
-//    4. affiche « ALERTE » (clignotant) si une cuve atteint son seuil ;
-//    5. envoie les températures à Adafruit IO toutes les 20 secondes ;
+//    4. affiche « ALERTE » (clignotant) si une cuve sort de sa fourchette,
+//       trop chaude ou trop froide ;
+//    5. envoie les températures à Adafruit IO toutes les 20 secondes,
+//       et l'état d'alerte quand il change (pour les emails) ;
 //    6. accepte les mises à jour du programme par le WiFi (OTA).
 //
 //  Réglages : config.h        Mots de passe : secrets.h (voir secrets.example.h)
@@ -50,10 +52,12 @@
 
 AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
 
-// Un feed par cuve pour la température, le nom et le seuil
+// Par cuve : température mesurée, cible et fourchette
 AdafruitIO_Feed *feedT[3] = { io.feed(FEED_TEMP_1), io.feed(FEED_TEMP_2), io.feed(FEED_TEMP_3) };
-AdafruitIO_Feed *feedN[3] = { io.feed(FEED_NOM_1), io.feed(FEED_NOM_2), io.feed(FEED_NOM_3) };
-AdafruitIO_Feed *feedS[3] = { io.feed(FEED_SEUIL_1), io.feed(FEED_SEUIL_2), io.feed(FEED_SEUIL_3) };
+AdafruitIO_Feed *feedC[3] = { io.feed(FEED_CIBLE_1), io.feed(FEED_CIBLE_2), io.feed(FEED_CIBLE_3) };
+AdafruitIO_Feed *feedF[3] = { io.feed(FEED_FOURCHETTE_1), io.feed(FEED_FOURCHETTE_2), io.feed(FEED_FOURCHETTE_3) };
+// État d'alerte global (pour les emails)
+AdafruitIO_Feed *feedAlerte = io.feed(FEED_ALERTE);
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
@@ -73,41 +77,42 @@ DeviceAddress addr[3] = {
 
 // Dernière température lue (DEVICE_DISCONNECTED_C = -127 = sonde absente)
 float temp[3] = { DEVICE_DISCONNECTED_C, DEVICE_DISCONNECTED_C, DEVICE_DISCONNECTED_C };
-String nom[3] = NOMS_DEFAUT;
-float seuil[3] = SEUILS_DEFAUT;
+String nom[3] = NOMS_CUVES;
+float cible[3] = CIBLES_DEFAUT;
+float fourchette[3] = FOURCHETTES_DEFAUT;
+bool enAlerte[3] = { false, false, false };   // cuve hors de sa fourchette ?
 
-unsigned long lastCloud = 0;   // heure du dernier envoi vers Adafruit IO
-bool altAlerte = false;        // fait clignoter le bandeau ALERTE
+unsigned long lastCloud = 0;      // heure du dernier envoi des températures
+unsigned long lastAlerte = 0;     // heure du dernier envoi du feed « alerte »
+int codeAlerteEnvoye = -1;        // dernier état d'alerte envoyé (-1 = jamais)
+bool altAlerte = false;           // fait clignoter le bandeau ALERTE
 
 
 // =============================================================================
 //  Réception des réglages depuis Adafruit IO
 // =============================================================================
-//  Quand on change un nom ou un seuil sur le tableau de bord, Adafruit IO
-//  l'envoie à l'ESP32, qui l'applique et le garde en mémoire.
+//  Quand on bouge un curseur sur le tableau de bord, Adafruit IO envoie la
+//  nouvelle valeur à l'ESP32, qui l'applique et la garde en mémoire.
 
-void majNom(int i, AdafruitIO_Data *d) {
-  String s = d->toString();
-  s.trim();
-  if (s.length() > 0) {
-    if (s.length() > NOM_LONGUEUR_MAX) s = s.substring(0, NOM_LONGUEUR_MAX);
-    nom[i] = s;
-    prefs.putString(("n" + String(i)).c_str(), nom[i]);
-  }
+void majCible(int i, AdafruitIO_Data *d) {
+  cible[i] = d->toFloat();
+  prefs.putFloat(("c" + String(i)).c_str(), cible[i]);
 }
 
-void majSeuil(int i, AdafruitIO_Data *d) {
-  seuil[i] = d->toFloat();
-  prefs.putFloat(("s" + String(i)).c_str(), seuil[i]);
+void majFourchette(int i, AdafruitIO_Data *d) {
+  float f = d->toFloat();
+  if (f <= 0) return;   // une fourchette nulle ou négative n'a pas de sens
+  fourchette[i] = f;
+  prefs.putFloat(("f" + String(i)).c_str(), fourchette[i]);
 }
 
 // La bibliothèque Adafruit IO demande une fonction par feed
-void cbN0(AdafruitIO_Data *d) { majNom(0, d); }
-void cbN1(AdafruitIO_Data *d) { majNom(1, d); }
-void cbN2(AdafruitIO_Data *d) { majNom(2, d); }
-void cbS0(AdafruitIO_Data *d) { majSeuil(0, d); }
-void cbS1(AdafruitIO_Data *d) { majSeuil(1, d); }
-void cbS2(AdafruitIO_Data *d) { majSeuil(2, d); }
+void cbC0(AdafruitIO_Data *d) { majCible(0, d); }
+void cbC1(AdafruitIO_Data *d) { majCible(1, d); }
+void cbC2(AdafruitIO_Data *d) { majCible(2, d); }
+void cbF0(AdafruitIO_Data *d) { majFourchette(0, d); }
+void cbF1(AdafruitIO_Data *d) { majFourchette(1, d); }
+void cbF2(AdafruitIO_Data *d) { majFourchette(2, d); }
 
 
 // =============================================================================
@@ -118,11 +123,14 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
 
-  // 1. Relire les noms et seuils gardés en mémoire (sinon valeurs par défaut)
+  // 1. Noms (fixés dans config.h), puis cibles et fourchettes gardées en mémoire
+  for (int i = 0; i < 3; i++) {
+    if (nom[i].length() > NOM_LONGUEUR_MAX) nom[i] = nom[i].substring(0, NOM_LONGUEUR_MAX);
+  }
   prefs.begin(PREFS_NAMESPACE, false);
   for (int i = 0; i < 3; i++) {
-    nom[i] = prefs.getString(("n" + String(i)).c_str(), NOM_DEFAUT_PREFIXE + String(i + 1));
-    seuil[i] = prefs.getFloat(("s" + String(i)).c_str(), seuil[i]);
+    cible[i] = prefs.getFloat(("c" + String(i)).c_str(), cible[i]);
+    fourchette[i] = prefs.getFloat(("f" + String(i)).c_str(), fourchette[i]);
   }
 
   // 2. Réveil matériel des broches (astuce du montage d'origine)
@@ -134,8 +142,8 @@ void setup() {
   u8g2.begin();
   io.connect();
 
-  feedN[0]->onMessage(cbN0); feedN[1]->onMessage(cbN1); feedN[2]->onMessage(cbN2);
-  feedS[0]->onMessage(cbS0); feedS[1]->onMessage(cbS1); feedS[2]->onMessage(cbS2);
+  feedC[0]->onMessage(cbC0); feedC[1]->onMessage(cbC1); feedC[2]->onMessage(cbC2);
+  feedF[0]->onMessage(cbF0); feedF[1]->onMessage(cbF1); feedF[2]->onMessage(cbF2);
 
   // Écran d'attente avec des points animés tant que la connexion n'est pas faite.
   // ⚠️ Sans internet, le programme attend ici (voir docs/ameliorations.md).
@@ -154,10 +162,10 @@ void setup() {
     delay(100);
   }
 
-  // 4. Demander à Adafruit IO les derniers noms et seuils enregistrés
+  // 4. Demander à Adafruit IO les dernières cibles et fourchettes enregistrées
   for (int i = 0; i < 3; i++) {
-    feedN[i]->get();
-    feedS[i]->get();
+    feedC[i]->get();
+    feedF[i]->get();
     delay(200);
   }
 
@@ -192,29 +200,53 @@ void setup() {
 
 
 // =============================================================================
+//  Outils
+// =============================================================================
+
+// Écrit un nombre sans décimale inutile : 19 → "19", 18.5 → "18.5"
+void formatNombre(char *buf, size_t taille, float v) {
+  if (fabsf(v - roundf(v)) < 0.05f) snprintf(buf, taille, "%d", (int)roundf(v));
+  else snprintf(buf, taille, "%.1f", v);
+}
+
+// Met à jour l'état d'alerte d'une cuve, avec une marge anti-clignotement :
+// on entre en alerte dès qu'on sort de [cible - fourchette ; cible + fourchette],
+// on n'en sort qu'en revenant de HYSTERESIS °C à l'intérieur.
+void verifierCuve(int i) {
+  if (temp[i] == DEVICE_DISCONNECTED_C) { enAlerte[i] = false; return; }
+
+  float bas = cible[i] - fourchette[i];
+  float haut = cible[i] + fourchette[i];
+
+  if (!enAlerte[i]) {
+    if (temp[i] > haut || temp[i] < bas) enAlerte[i] = true;
+  } else {
+    float marge = fminf((float)HYSTERESIS, fourchette[i] / 2);
+    if (temp[i] <= haut - marge && temp[i] >= bas + marge) enAlerte[i] = false;
+  }
+}
+
+
+// =============================================================================
 //  Affichage d'une cuve (une bande de l'écran portrait 64 × 128)
 // =============================================================================
-//  Ligne du haut : nom de la cuve (+ « ! » si alerte) et seuil à droite.
-//  Dessous, en gros : la température (en négatif si alerte),
+//  Ligne du haut : nom de la cuve à gauche, « cible±fourchette » à droite.
+//  Dessous, en gros : la température (en négatif si hors fourchette),
 //  ou « ERR. SONDE » si la sonde ne répond pas.
 
 void dessinerCuve(int i, int y) {
-  bool alerte = (temp[i] >= seuil[i] && temp[i] != DEVICE_DISCONNECTED_C);
-
   // Nom de la cuve
   u8g2.setFont(u8g2_font_5x7_tf);
-  u8g2.setCursor(1, y);
-  char nBuf[12] = "";
-  strcpy(nBuf, nom[i].c_str());
-  if (alerte) strcat(nBuf, "!");
-  u8g2.print(nBuf);
+  u8g2.setCursor(0, y);
+  u8g2.print(nom[i]);
 
-  // Seuil, aligné à droite
-  char sBuf[10] = "";
-  dtostrf(seuil[i], 2, 0, sBuf);
-  strcat(sBuf, "C");
-  u8g2.setCursor(63 - u8g2.getStrWidth(sBuf), y);
-  u8g2.print(sBuf);
+  // Cible ± fourchette, en petit, alignée à droite (ex. « 18.5±1 »)
+  char cBuf[8], fBuf[8], rBuf[20];
+  formatNombre(cBuf, sizeof(cBuf), cible[i]);
+  formatNombre(fBuf, sizeof(fBuf), fourchette[i]);
+  snprintf(rBuf, sizeof(rBuf), "%s\xB1%s", cBuf, fBuf);   // \xB1 = signe ±
+  u8g2.setFont(u8g2_font_4x6_tf);
+  u8g2.drawStr(64 - u8g2.getStrWidth(rBuf), y, rBuf);
 
   // Température en gros
   if (temp[i] == DEVICE_DISCONNECTED_C) {
@@ -225,7 +257,7 @@ void dessinerCuve(int i, int y) {
     char tBuf[12] = "";
     dtostrf(temp[i], 4, 1, tBuf);
     strcat(tBuf, " C");
-    if (alerte) {
+    if (enAlerte[i]) {
       u8g2.drawBox(0, y + 3, 64, 16);   // fond blanc...
       u8g2.setDrawColor(0);             // ...et texte noir
     }
@@ -246,12 +278,19 @@ void loop() {
   io.run();              // garde la connexion Adafruit IO en vie
   unsigned long now = millis();
 
-  // 1. Lire les 3 sondes et vérifier les seuils
+  // 1. Lire les 3 sondes et vérifier les fourchettes
   sensors.requestTemperatures();
   bool alerteGlob = false;
+  int codeAlerte = 0;    // ex. 13 = cuves 1 et 3 hors fourchette
   for (int i = 0; i < 3; i++) {
     temp[i] = sensors.getTempC(addr[i]);
-    if (temp[i] >= seuil[i] && temp[i] != DEVICE_DISCONNECTED_C) alerteGlob = true;
+    // 85 °C exactement = valeur d'une sonde mal alimentée, pas une vraie mesure
+    if (temp[i] == 85.0f) temp[i] = DEVICE_DISCONNECTED_C;
+    verifierCuve(i);
+    if (enAlerte[i]) {
+      alerteGlob = true;
+      codeAlerte = codeAlerte * 10 + (i + 1);
+    }
   }
 
   // 2. Envoyer les températures à Adafruit IO (voir INTERVALLE_ENVOI_MS)
@@ -262,7 +301,14 @@ void loop() {
     }
   }
 
-  // 3. Dessiner l'écran : 3 cuves empilées, puis le bandeau d'état en bas
+  // 3. Envoyer l'état d'alerte s'il a changé (au plus toutes les 30 s)
+  if (codeAlerte != codeAlerteEnvoye && now - lastAlerte >= INTERVALLE_ALERTE_MS) {
+    lastAlerte = now;
+    codeAlerteEnvoye = codeAlerte;
+    feedAlerte->save(codeAlerte);
+  }
+
+  // 4. Dessiner l'écran : 3 cuves empilées, puis le bandeau d'état en bas
   u8g2.firstPage();
   do {
     dessinerCuve(0, 12); u8g2.drawHLine(0, 33, 64);

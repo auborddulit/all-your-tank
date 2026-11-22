@@ -36,49 +36,67 @@
 
 
 // -----------------------------------------------------------------------------
-//  2. Noms et seuils d'alerte par défaut
+//  2. Noms des cuves, températures cibles et fourchettes
 // -----------------------------------------------------------------------------
-//  Ces valeurs ne servent qu'au tout premier démarrage. Ensuite, les noms et
-//  les seuils se règlent depuis le tableau de bord Adafruit IO, et l'ESP32
-//  les garde en mémoire même après une coupure de courant.
 
-#define NOMS_DEFAUT             { "CUVE 1", "CUVE 2", "CUVE 3" }
-#define NOM_DEFAUT_PREFIXE      "CUVE "       // donne "CUVE 1", "CUVE 2"...
-#define NOM_LONGUEUR_MAX        6             // l'écran n'affiche que 6 lettres
+// Noms affichés à l'écran (6 caractères maximum, sans accent).
+#define NOMS_CUVES              { "CUVE 1", "CUVE 2", "CUVE 3" }
+#define NOM_LONGUEUR_MAX        6
 
-// Seuil d'alerte en °C : l'alerte se déclenche quand la température
-// atteint ou dépasse ce seuil.
-#define SEUILS_DEFAUT           { 40.0, 45.0, 35.5 }
+// Température cible et fourchette (en °C) par défaut.
+// Exemple : cible 19 et fourchette 1  →  tout va bien entre 18 et 20 °C.
+// L'alerte se déclenche si la cuve est trop chaude OU trop froide.
+//
+// Ces valeurs ne servent qu'au tout premier démarrage. Ensuite, cibles et
+// fourchettes se règlent avec les curseurs du tableau de bord Adafruit IO,
+// et l'ESP32 les garde en mémoire même après une coupure de courant.
+#define CIBLES_DEFAUT           { 19.0, 19.0, 19.0 }
+#define FOURCHETTES_DEFAUT      { 1.0, 1.0, 1.0 }
 
-// Nom de l'espace de mémoire interne où sont gardés noms et seuils.
+// Marge anti-clignotement (°C) : une fois en alerte, la cuve doit revenir
+// de 0,2 °C à l'intérieur de sa fourchette pour que l'alerte s'arrête.
+// Évite une rafale d'alertes quand la température hésite sur la limite.
+#define HYSTERESIS              0.2
+
+// Nom de l'espace de mémoire interne où sont gardées cibles et fourchettes.
 #define PREFS_NAMESPACE         "brasserie"
 
 
 // -----------------------------------------------------------------------------
 //  3. Adafruit IO (le tableau de bord en ligne)
 // -----------------------------------------------------------------------------
-//  Noms des « feeds » (flux de données) à créer sur io.adafruit.com.
-//  Voir docs/adafruit-io.md.
+//  Noms des « feeds » (flux de données) sur io.adafruit.com : 10 au total,
+//  le maximum du compte gratuit. Voir docs/adafruit-io.md.
 
 // Températures mesurées (envoyées par l'ESP32)
 #define FEED_TEMP_1             "cuve1"
 #define FEED_TEMP_2             "cuve2"
 #define FEED_TEMP_3             "cuve3"
 
-// Noms des cuves (réglés depuis le tableau de bord)
-#define FEED_NOM_1              "nom-cuve1"
-#define FEED_NOM_2              "nom-cuve2"
-#define FEED_NOM_3              "nom-cuve3"
+// Températures cibles (réglées avec un curseur du tableau de bord)
+#define FEED_CIBLE_1            "cible-cuve1"
+#define FEED_CIBLE_2            "cible-cuve2"
+#define FEED_CIBLE_3            "cible-cuve3"
 
-// Seuils d'alerte (réglés depuis le tableau de bord)
-#define FEED_SEUIL_1            "seuil-cuve1"
-#define FEED_SEUIL_2            "seuil-cuve2"
-#define FEED_SEUIL_3            "seuil-cuve3"
+// Fourchettes ± (réglées avec un curseur du tableau de bord)
+#define FEED_FOURCHETTE_1       "fourchette-cuve1"
+#define FEED_FOURCHETTE_2       "fourchette-cuve2"
+#define FEED_FOURCHETTE_3       "fourchette-cuve3"
+
+// État d'alerte, envoyé par l'ESP32 pour déclencher les emails :
+//   0  = toutes les cuves dans leur fourchette
+//   2  = la cuve 2 est hors fourchette
+//   13 = les cuves 1 et 3 sont hors fourchette, etc.
+#define FEED_ALERTE             "alerte"
 
 // Envoi des températures toutes les 20 secondes (en millisecondes).
 // Le compte gratuit Adafruit IO accepte 30 valeurs par minute :
 // 3 cuves × 3 envois par minute = 9 valeurs, on reste large.
 #define INTERVALLE_ENVOI_MS     20000
+
+// Le feed « alerte » n'est envoyé que quand l'état change,
+// et au plus une fois toutes les 30 secondes.
+#define INTERVALLE_ALERTE_MS    30000
 
 
 // -----------------------------------------------------------------------------

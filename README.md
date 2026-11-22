@@ -20,10 +20,10 @@
 ## Ce que ça fait
 
 - **Mesure** la température de 3 cuves avec des sondes inox étanches, glissées dans les doigts de gant.
-- **Affiche** sur place les 3 températures, le nom de chaque cuve et son seuil, sur un petit écran OLED vertical.
-- **Alerte** à l'écran (bandeau « ALERTE » clignotant) quand une cuve atteint son seuil.
+- **Affiche** sur place les 3 températures, le nom de chaque cuve et sa cible (par exemple `18.5±1`), sur un petit écran OLED vertical.
+- **Alerte** à l'écran (bandeau « ALERTE » clignotant) et par email quand une cuve sort de sa fourchette, trop chaude ou trop froide.
 - **Envoie** les températures en ligne toutes les 20 secondes : graphiques sur téléphone et alertes par email via [Adafruit IO](https://io.adafruit.com) (gratuit).
-- **Se règle à distance** : noms et seuils des cuves se changent depuis le tableau de bord, et l'ESP32 s'en souvient après une coupure de courant.
+- **Se règle à distance** : la température cible et la fourchette de chaque cuve se changent avec des curseurs, selon la levure et l'étape de fermentation. L'ESP32 s'en souvient après une coupure de courant.
 - **Se met à jour par le WiFi** (OTA) : pas besoin d'ouvrir le boîtier pour changer le programme.
 
 ```mermaid
@@ -56,13 +56,13 @@ flowchart LR
 4. **Vos réglages** :
    - copiez `secrets.example.h` en `secrets.h` et mettez-y votre WiFi et votre clé Adafruit IO ;
    - trouvez l'adresse de vos sondes avec l'outil [`outils/scan-sondes`](outils/scan-sondes/scan-sondes.ino) et recopiez-la dans `config.h`.
-5. **Le tableau de bord** : créez les 9 feeds sur Adafruit IO ([docs/adafruit-io.md](docs/adafruit-io.md)), puis téléversez le programme.
+5. **Le tableau de bord** : créez les feeds et les curseurs sur Adafruit IO ([docs/adafruit-io.md](docs/adafruit-io.md)), puis téléversez le programme.
 
 ## Adapter le projet à votre brasserie
 
 Tout ce qui se règle est regroupé dans **un seul fichier**,
 [`firmware/all-your-tank/config.h`](firmware/all-your-tank/config.h), commenté ligne par ligne :
-broche des sondes, adresses des sondes, noms et seuils par défaut, noms des feeds,
+broche des sondes, adresses et noms des cuves, cibles et fourchettes par défaut, noms des feeds,
 fréquence d'envoi, type et orientation de l'écran.
 
 Pour aller plus loin (autre écran, logo au démarrage, nombre de cuves différent) :
