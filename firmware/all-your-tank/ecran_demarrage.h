@@ -1,12 +1,16 @@
 // =============================================================================
 //  ecran_demarrage.h : écran de démarrage animé (64 × 128, portrait)
 // =============================================================================
-//  L'œil-thermomètre « ALL YOUR TANK ARE BELONG TO US », animé pendant la
-//  connexion :
+//  L'œil-thermomètre « ALL YOUR TANK ARE BELONG TO US », animé au démarrage :
 //    1. l'œil s'ouvre ;
 //    2. les 5 rayons s'allument un par un ;
 //    3. le texte s'écrit lettre par lettre (machine à écrire) ;
-//    4. ensuite l'œil cligne de temps en temps.
+//    4. tant que la connexion n'est pas faite, l'œil cligne de temps en temps.
+//
+//  Les étapes 1 à 3 (dessinerIntro) se jouent d'une traite pendant que le WiFi
+//  se connecte tout seul en arrière-plan. La connexion à Adafruit IO, elle,
+//  bloque le programme quelques secondes à chaque essai : on ne la lance qu'à
+//  l'étape 4, entre deux clignements (clignerOeil), sinon l'animation sauterait.
 //  En bas, en petit, un message (« WIFI... », « ADAFRUIT... », « CONNECTE ! »).
 //
 //  Tout est dessiné à partir d'UNE seule image (logo_oeil_bits) : à chaque
@@ -120,8 +124,8 @@ const unsigned long PAS_RAYON = 160;         // un rayon de plus toutes les 160 
 const unsigned long DEBUT_TEXTE = 1600;
 const unsigned long PAS_LETTRE = 80;         // une lettre toutes les 80 ms
 const unsigned long FIN_INTRO = DEBUT_TEXTE + NB_LETTRES * PAS_LETTRE + 60;
-const unsigned long DEBUT_CLIGNEMENTS = FIN_INTRO + 900;
-const unsigned long PERIODE_CLIGNEMENT = 2400;
+const unsigned long PERIODE_CLIGNEMENT = 2400;   // un clignement toutes les 2,4 s
+const unsigned long PAS_CLIGNEMENT = 80;
 
 // Un pixel de l'image est-il allumé ?
 static bool pixelLogo(int x, int y) {
@@ -155,44 +159,54 @@ static void dessinerOeil(U8G2 &e, float f) {
   }
 }
 
-// Ouverture de l'œil selon le temps : ouverture au début, puis clignements
-static float ouvertureOeil(unsigned long t) {
-  if (t < DUREE_OUVERTURE) return (float)t / DUREE_OUVERTURE;
-  if (t < DEBUT_CLIGNEMENTS) return 1.0f;
-  unsigned long phase = (t - DEBUT_CLIGNEMENTS) % PERIODE_CLIGNEMENT;
-  const float clignement[6] = {1.0f, 0.6f, 0.2f, 0.0f, 0.2f, 0.6f};   // 80 ms chacun
-  return phase < 6 * 80 ? clignement[phase / 80] : 1.0f;
-}
-
-// Dessine l'écran de démarrage au temps t (ms depuis le début) avec le message
-// en bas. Renvoie true quand l'animation d'ouverture est finie (texte complet).
-static bool dessinerDemarrage(U8G2 &e, unsigned long t, const char *message) {
+// Dessine une image complète : l'œil ouvert à la proportion « ouverture »,
+// les « nbRayons » premiers rayons, les « nbLettres » premières lettres, et le
+// message en bas.
+static void dessinerImage(U8G2 &e, float ouverture, int nbRayons, int nbLettres, const char *message) {
   e.clearBuffer();
 
-  dessinerOeil(e, ouvertureOeil(t));
+  dessinerOeil(e, ouverture);
 
-  // Rayons
-  int nbRayons = t < DEBUT_RAYONS ? 0 : (t - DEBUT_RAYONS) / PAS_RAYON + 1;
-  if (nbRayons > 5) nbRayons = 5;
-  for (int i = 0; i < nbRayons; i++) {
+  for (int i = 0; i < nbRayons && i < 5; i++) {
     copierLogo(e, RAYONS[i][0], RAYONS[i][1], RAYONS[i][2], RAYONS[i][3]);
   }
 
   // Texte, lettre par lettre : on dévoile chaque ligne jusqu'à la dernière lettre écrite
-  int nbLettres = t < DEBUT_TEXTE ? 0 : (t - DEBUT_TEXTE) / PAS_LETTRE;
-  if (nbLettres > NB_LETTRES) nbLettres = NB_LETTRES;
   for (int ligne = 0; ligne < 3; ligne++) {
     int fin = 0;
-    for (int k = 0; k < nbLettres; k++) {
+    for (int k = 0; k < nbLettres && k < NB_LETTRES; k++) {
       if (LETTRE_LIGNE[k] == ligne) fin = LETTRE_FIN[k];
     }
     if (fin > 0) copierLogo(e, 0, TEXTE_Y[ligne], fin, TEXTE_Y[ligne] + 5);
   }
 
-  // Message de connexion, centré tout en bas
+  // Message, centré tout en bas
   e.setFont(u8g2_font_tom_thumb_4x6_tr);
   e.drawStr((LOGO_OEIL_LARGEUR - e.getStrWidth(message)) / 2, 126, message);
 
   e.sendBuffer();
+}
+
+// Étapes 1 à 3 : dessine l'ouverture au temps t (ms depuis le début).
+// Renvoie true quand elle est finie (texte complet).
+static bool dessinerIntro(U8G2 &e, unsigned long t, const char *message) {
+  float ouverture = t < DUREE_OUVERTURE ? (float)t / DUREE_OUVERTURE : 1.0f;
+  int nbRayons = t < DEBUT_RAYONS ? 0 : (t - DEBUT_RAYONS) / PAS_RAYON + 1;
+  int nbLettres = t < DEBUT_TEXTE ? 0 : (t - DEBUT_TEXTE) / PAS_LETTRE;
+  dessinerImage(e, ouverture, nbRayons, nbLettres, message);
   return t >= FIN_INTRO;
+}
+
+// Le logo complet, œil grand ouvert
+static void dessinerLogo(U8G2 &e, const char *message) {
+  dessinerImage(e, 1.0f, 5, NB_LETTRES, message);
+}
+
+// Étape 4 : un clignement complet (environ une demi-seconde), puis l'œil rouvert
+static void clignerOeil(U8G2 &e, const char *message) {
+  const float clignement[6] = {0.6f, 0.2f, 0.0f, 0.2f, 0.6f, 1.0f};
+  for (float ouverture : clignement) {
+    dessinerImage(e, ouverture, 5, NB_LETTRES, message);
+    delay(PAS_CLIGNEMENT);
+  }
 }

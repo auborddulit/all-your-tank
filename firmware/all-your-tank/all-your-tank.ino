@@ -123,9 +123,8 @@ void cbF2(AdafruitIO_Data *d) { majFourchette(2, d); }
 
 // Message affiché en bas de l'écran de démarrage, avec des points qui défilent
 unsigned long debutDemarrage = 0;
-const char *messageConnexion(bool connecte) {
+const char *messageConnexion() {
   static char texte[16];
-  if (connecte) return "CONNECTE !";
   const char *etape = (WiFi.status() == WL_CONNECTED) ? "ADAFRUIT" : "WIFI";
   int nb = ((millis() - debutDemarrage) / 400) % 3 + 1;
   snprintf(texte, sizeof(texte), "%s%.*s", etape, nb, "...");
@@ -158,15 +157,24 @@ void setup() {
   feedC[0]->onMessage(cbC0); feedC[1]->onMessage(cbC1); feedC[2]->onMessage(cbC2);
   feedF[0]->onMessage(cbF0); feedF[1]->onMessage(cbF1); feedF[2]->onMessage(cbF2);
 
-  // Écran de démarrage animé (ecran_demarrage.h) pendant la connexion, avec en
-  // bas l'étape en cours. On laisse l'animation aller jusqu'au bout du texte.
-  // ⚠️ Sans internet, le programme attend ici (voir docs/ameliorations.md).
+  // Écran de démarrage animé (ecran_demarrage.h), avec en bas l'étape en cours.
+  // a) L'ouverture se joue d'une traite : le WiFi se connecte pendant ce temps.
   debutDemarrage = millis();
-  while (true) {
-    bool connecte = io.status() >= AIO_CONNECTED;
-    bool introFinie = dessinerDemarrage(u8g2, millis() - debutDemarrage, messageConnexion(connecte));
-    if (connecte && introFinie) break;
-    delay(40);
+  while (!dessinerIntro(u8g2, millis() - debutDemarrage, messageConnexion())) {
+    delay(30);
+  }
+  // b) Connexion à Adafruit IO : chaque essai bloque un moment, alors on ne
+  //    vérifie qu'avec l'œil ouvert, et on cligne de temps en temps.
+  // ⚠️ Sans internet, le programme attend ici (voir docs/ameliorations.md).
+  unsigned long dernierClignement = millis();
+  while (io.status() < AIO_CONNECTED) {
+    if (millis() - dernierClignement >= PERIODE_CLIGNEMENT) {
+      clignerOeil(u8g2, messageConnexion());
+      dernierClignement = millis();
+    } else {
+      dessinerLogo(u8g2, messageConnexion());
+      delay(100);
+    }
   }
 
   // 4. Demander à Adafruit IO les dernières cibles et fourchettes enregistrées
@@ -190,11 +198,10 @@ void setup() {
   ArduinoOTA.begin();
 
   // 6. Le logo reste encore 2 secondes avec « CONNECTE ! »
-  unsigned long finLogo = millis() + 2000;
-  while (millis() < finLogo) {
-    dessinerDemarrage(u8g2, millis() - debutDemarrage, "CONNECTE !");
-    delay(40);
-  }
+  dessinerLogo(u8g2, "CONNECTE !");
+  delay(1000);
+  clignerOeil(u8g2, "CONNECTE !");
+  delay(500);
 
   // 7. Démarrage des sondes
   sensors.begin();
