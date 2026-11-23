@@ -1,143 +1,278 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Écran d'une cuve : onglets, cadran, réglage de la consigne, préréglages -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/fond"
     android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingStart="20dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="All your tank"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <TextView
+        <!-- En-tête -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="Températures des cuves de la brasserie, sur l'écran d'accueil."
-            android:textSize="14sp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <!-- Compte Adafruit IO -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Compte Adafruit IO"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Brasserie"
+                android:textColor="@color/encre"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/bouton_reglages"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:background="@drawable/onglets_fond"
+                android:minWidth="0dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Réglages"
+                android:textAllCaps="false"
+                android:textColor="@color/encre"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
+            android:id="@+id/etat_connexion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Sur io.adafruit.com, cliquez sur l'icône de clé jaune : vous y trouvez le nom d'utilisateur (Username) et la clé (Active Key, elle commence par aio_)."
+            android:layout_marginTop="4dp"
+            android:text=""
+            android:textColor="@color/attenue"
             android:textSize="13sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Nom d'utilisateur" />
-
-        <EditText
-            android:id="@+id/champ_utilisateur"
+        <!-- Onglets des cuves -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="votre_nom"
-            android:importantForAutofill="no"
-            android:inputType="text|textNoSuggestions"
-            android:singleLine="true" />
+            android:layout_marginTop="14dp"
+            android:background="@drawable/onglets_fond"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <Button
+                android:id="@+id/onglet1"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:background="@drawable/onglet_actif"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/onglet2"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/onglet_inactif"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/onglet3"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/onglet_inactif"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Cadran et température -->
+        <fr.allyourtank.widget.JaugeView
+            android:id="@+id/jauge"
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="18dp"
+            android:contentDescription="Cadran de température" />
 
         <TextView
+            android:id="@+id/temperature"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="--"
+            android:textColor="@color/encre"
+            android:textSize="52sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/etat_cuve"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text=""
+            android:textColor="@color/encre"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <!-- Réglage de la consigne -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/carte"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cible"
+                    android:textColor="@color/attenue"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/cible_moins"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bouton_rond"
+                        android:contentDescription="Baisser la cible"
+                        android:minWidth="0dp"
+                        android:text="−"
+                        android:textColor="@color/encre"
+                        android:textSize="22sp" />
+
+                    <TextView
+                        android:id="@+id/cible"
+                        android:layout_width="64dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="--"
+                        android:textColor="@color/encre"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/cible_plus"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bouton_rond"
+                        android:contentDescription="Monter la cible"
+                        android:minWidth="0dp"
+                        android:text="+"
+                        android:textColor="@color/encre"
+                        android:textSize="22sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:background="@drawable/carte"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Fourchette"
+                    android:textColor="@color/attenue"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/fourchette_moins"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bouton_rond"
+                        android:contentDescription="Réduire la fourchette"
+                        android:minWidth="0dp"
+                        android:text="−"
+                        android:textColor="@color/encre"
+                        android:textSize="22sp" />
+
+                    <TextView
+                        android:id="@+id/fourchette"
+                        android:layout_width="64dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="--"
+                        android:textColor="@color/encre"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/fourchette_plus"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bouton_rond"
+                        android:contentDescription="Élargir la fourchette"
+                        android:minWidth="0dp"
+                        android:text="+"
+                        android:textColor="@color/encre"
+                        android:textSize="22sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Préréglages -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="PRÉRÉGLAGES"
+            android:textColor="@color/attenue"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/prereglages"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Clé (Active Key)" />
-
-        <EditText
-            android:id="@+id/champ_cle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="aio_…"
-            android:importantForAutofill="no"
-            android:inputType="textPassword"
-            android:singleLine="true" />
-
-        <!-- Noms des cuves -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Noms des cuves"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:orientation="vertical" />
 
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Les noms affichés sur le widget (par exemple le nom de la bière)."
-            android:textSize="13sp" />
-
-        <EditText
-            android:id="@+id/champ_nom1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Cuve 1"
-            android:importantForAutofill="no"
-            android:inputType="textCapSentences"
-            android:singleLine="true" />
-
-        <EditText
-            android:id="@+id/champ_nom2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Cuve 2"
-            android:importantForAutofill="no"
-            android:inputType="textCapSentences"
-            android:singleLine="true" />
-
-        <EditText
-            android:id="@+id/champ_nom3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Cuve 3"
-            android:importantForAutofill="no"
-            android:inputType="textCapSentences"
-            android:singleLine="true" />
-
-        <Button
-            android:id="@+id/bouton_enregistrer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Enregistrer et tester" />
-
-        <TextView
-            android:id="@+id/etat"
+            android:id="@+id/etat_envoi"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:textSize="15sp" />
-
-        <!-- Mode d'emploi -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Ajouter le widget"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="1. Appui long sur un espace vide de l'écran d'accueil.\n2. Widgets, puis All your tank.\n3. Faites glisser le widget sur l'écran.\n\nLe widget se met à jour tout seul environ toutes les 15 minutes. Touchez-le pour le mettre à jour tout de suite, touchez « Brasserie ⚙ » pour revenir ici.\n\nCouleurs : rouge = hors fourchette, gris = pas de mesure récente."
+            android:gravity="center_horizontal"
+            android:text=""
+            android:textColor="@color/attenue"
             android:textSize="14sp" />
     </LinearLayout>
 </ScrollView>

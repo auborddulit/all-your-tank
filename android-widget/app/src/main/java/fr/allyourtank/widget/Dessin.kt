@@ -5,25 +5,29 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
+import android.os.Build
 import android.widget.RemoteViews
 import java.text.SimpleDateFormat
-import java.time.Duration
-import java.time.Instant
 import java.util.Date
 import java.util.Locale
-import kotlin.math.abs
-import kotlin.math.roundToLong
 
-/** Dessine le widget à partir des dernières valeurs gardées en mémoire. */
+/**
+ * Dessine le widget à partir des dernières valeurs gardées en mémoire.
+ * Les textes suivent le mode clair/sombre grâce à res/values(-night)/colors.xml ;
+ * les cadrans et les couleurs d'alerte sont fournis dans les deux versions
+ * (Android 12 et plus récent choisit tout seul ; avant, on prend le mode actuel).
+ */
 object Dessin {
 
-    /** Au-delà de ce délai sans nouvelle mesure, la cuve est grisée. */
-    private const val MINUTES_ANCIENNE = 10L
-
-    private val LIGNES = intArrayOf(R.id.ligne1, R.id.ligne2, R.id.ligne3)
-    private val NOMS = intArrayOf(R.id.nom1, R.id.nom2, R.id.nom3)
+    private val COLONNES = intArrayOf(R.id.col1, R.id.col2, R.id.col3)
+    private val JAUGES = intArrayOf(R.id.jauge1, R.id.jauge2, R.id.jauge3)
     private val TEMPS = intArrayOf(R.id.temp1, R.id.temp2, R.id.temp3)
-    private val CIBLES = intArrayOf(R.id.cible1, R.id.cible2, R.id.cible3)
+    private val NOMS = intArrayOf(R.id.nom1, R.id.nom2, R.id.nom3)
+    private val DETAILS = intArrayOf(R.id.detail1, R.id.detail2, R.id.detail3)
+
+    /** Largeur des images de cadran, en pixels. */
+    private const val LARGEUR_JAUGE = 240
 
     private fun ids(ctx: Context): IntArray =
         AppWidgetManager.getInstance(ctx)
@@ -48,6 +52,9 @@ object Dessin {
         val vue = RemoteViews(ctx.packageName, R.layout.widget_cuves)
         val reglages = Reglages.lire(ctx)
         val feeds = Cache.feeds(ctx)
+        val jour = Palette.pour(ctx, false)
+        val nuit = Palette.pour(ctx, true)
+        val recent = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
         // En-tête : heure de la dernière lecture, ou message d'erreur
         val erreur = Cache.erreur(ctx)
@@ -62,70 +69,67 @@ object Dessin {
         )
 
         for (i in 0 until NB_CUVES) {
-            val n = i + 1
-            val mesure = feeds["cuve$n"]
-            val temp = mesure?.nombre
-            val cible = feeds["cible-cuve$n"]?.nombre
-            val fourchette = feeds["fourchette-cuve$n"]?.nombre
-            val minutes = minutesDepuis(mesure?.date)
+            val e = EtatCuve.lire(feeds, i + 1)
 
             vue.setTextViewText(NOMS[i], reglages.noms[i])
-            vue.setTextViewText(TEMPS[i], if (temp == null) "--" else String.format(Locale.FRANCE, "%.1f °C", temp))
+            vue.setTextViewText(TEMPS[i], if (e.temp == null) "--" else Format.temp(e.temp) + "°")
+            vue.setTextViewText(DETAILS[i], e.detail())
 
-            val texteCible = if (cible != null && fourchette != null) {
-                "cible ${court(cible)} ±${court(fourchette)}"
+            // Cadran, en version claire et sombre
+            if (recent) {
+                vue.setIcon(
+                    JAUGES[i], "setImageIcon",
+                    Icon.createWithBitmap(Jauge.image(LARGEUR_JAUGE, e, jour)),
+                    Icon.createWithBitmap(Jauge.image(LARGEUR_JAUGE, e, nuit)),
+                )
             } else {
-                "cible non réglée"
+                vue.setImageViewBitmap(JAUGES[i], Jauge.image(LARGEUR_JAUGE, e, Palette.actuelle(ctx)))
             }
 
-            val (fond, detail) = when {
-                temp == null ->
-                    R.drawable.ligne_grise to "pas de mesure"
-                minutes != null && minutes > MINUTES_ANCIENNE ->
-                    R.drawable.ligne_grise to "dernière mesure il y a ${duree(minutes)}"
-                cible != null && fourchette != null && temp > cible + fourchette ->
-                    R.drawable.ligne_alerte to "$texteCible · trop chaud"
-                cible != null && fourchette != null && temp < cible - fourchette ->
-                    R.drawable.ligne_alerte to "$texteCible · trop froid"
-                else ->
-                    R.drawable.ligne_ok to texteCible
+            // Couleurs d'état (sinon : celles de la mise en page)
+            when {
+                e.ancienne -> {
+                    couleur(ctx, vue, TEMPS[i], jour.attenue, nuit.attenue, recent)
+                }
+                e.chaud -> {
+                    couleur(ctx, vue, TEMPS[i], jour.alerte, nuit.alerte, recent)
+                    couleur(ctx, vue, DETAILS[i], jour.alerte, nuit.alerte, recent)
+                }
+                e.froid -> {
+                    couleur(ctx, vue, TEMPS[i], jour.froid, nuit.froid, recent)
+                    couleur(ctx, vue, DETAILS[i], jour.froid, nuit.froid, recent)
+                }
             }
-            vue.setInt(LIGNES[i], "setBackgroundResource", fond)
-            vue.setTextViewText(CIBLES[i], detail)
+
+            // Toucher une cuve : ouvrir l'appli sur cette cuve
+            vue.setOnClickPendingIntent(COLONNES[i], ouvrirAppli(ctx, i))
         }
 
-        // Toucher le widget : relire tout de suite
-        val rafraichir = Intent(ctx, TankWidgetProvider::class.java)
-            .setAction(TankWidgetProvider.ACTION_RAFRAICHIR)
+        // Toucher le titre : ouvrir l'appli ; toucher l'heure : relire tout de suite
+        vue.setOnClickPendingIntent(R.id.titre, ouvrirAppli(ctx, 0))
+        val rafraichir = Intent(ctx, TankWidgetProvider::class.java).setAction(TankWidgetProvider.ACTION_RAFRAICHIR)
         vue.setOnClickPendingIntent(
-            R.id.racine,
+            R.id.heure,
             PendingIntent.getBroadcast(ctx, 0, rafraichir, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
-        )
-        // Toucher le titre : ouvrir les réglages
-        vue.setOnClickPendingIntent(
-            R.id.titre,
-            PendingIntent.getActivity(
-                ctx, 1, Intent(ctx, MainActivity::class.java),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            ),
         )
         return vue
     }
 
-    /** 19.0 → "19" ; 18.5 → "18,5" */
-    private fun court(v: Double): String =
-        if (abs(v - v.roundToLong()) < 0.05) v.roundToLong().toString()
-        else String.format(Locale.FRANCE, "%.1f", v)
-
-    private fun minutesDepuis(dateIso: String?): Long? = try {
-        if (dateIso == null) null else Duration.between(Instant.parse(dateIso), Instant.now()).toMinutes()
-    } catch (e: Exception) {
-        null
+    private fun ouvrirAppli(ctx: Context, cuve: Int): PendingIntent {
+        val intent = Intent(ctx, MainActivity::class.java)
+            .putExtra(MainActivity.EXTRA_CUVE, cuve)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        return PendingIntent.getActivity(
+            ctx, 10 + cuve, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
-    private fun duree(minutes: Long): String = when {
-        minutes < 60 -> "$minutes min"
-        minutes < 48 * 60 -> "${minutes / 60} h"
-        else -> "${minutes / (24 * 60)} jours"
+    private fun couleur(ctx: Context, vue: RemoteViews, id: Int, jour: Int, nuit: Int, recent: Boolean) {
+        if (recent) {
+            vue.setColorInt(id, "setTextColor", jour, nuit)
+        } else {
+            vue.setTextColor(id, if (Palette.estNuit(ctx)) nuit else jour)
+        }
     }
 }

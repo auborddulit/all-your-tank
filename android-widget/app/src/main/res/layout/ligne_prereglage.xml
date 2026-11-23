@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Une ligne de l'éditeur de préréglages : nom, cible, fourchette, supprimer -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/carte"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingEnd="4dp">
+
+    <EditText
+        android:id="@+id/nom"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:hint="Nom"
+        android:importantForAutofill="no"
+        android:inputType="textCapSentences"
+        android:singleLine="true"
+        android:textColor="@color/encre"
+        android:textSize="15sp" />
+
+    <EditText
+        android:id="@+id/cible"
+        android:layout_width="64dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:hint="°C"
+        android:importantForAutofill="no"
+        android:inputType="numberDecimal|numberSigned"
+        android:digits="0123456789.,-"
+        android:singleLine="true"
+        android:textColor="@color/encre"
+        android:textSize="15sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="±"
+        android:textColor="@color/attenue"
+        android:textSize="15sp" />
+
+    <EditText
+        android:id="@+id/fourchette"
+        android:layout_width="56dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:hint="1"
+        android:importantForAutofill="no"
+        android:inputType="numberDecimal"
+        android:digits="0123456789.,"
+        android:singleLine="true"
+        android:textColor="@color/encre"
+        android:textSize="15sp" />
+
+    <Button
+        android:id="@+id/supprimer"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="Supprimer ce préréglage"
+        android:minWidth="0dp"
+        android:text="✕"
+        android:textColor="@color/attenue"
+        android:textSize="18sp" />
+</LinearLayout>

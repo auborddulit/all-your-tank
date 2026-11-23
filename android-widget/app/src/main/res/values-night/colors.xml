@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Palette « Ambre », mode sombre (noir pur) -->
+<resources>
+    <color name="fond">#000000</color>
+    <color name="carte">#1E1813</color>
+    <color name="encre">#F7EBDC</color>
+    <color name="attenue">#C2B09A</color>
+    <color name="piste">#3A2F27</color>
+    <color name="bande">#E8A33B</color>
+    <color name="alerte">#FF6F61</color>
+    <color name="froid">#8CC4FF</color>
+    <color name="puce">#2C231C</color>
+    <color name="sur_encre">#000000</color>
+</resources>

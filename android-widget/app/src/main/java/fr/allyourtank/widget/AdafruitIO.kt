@@ -63,6 +63,38 @@ object AdafruitIO {
         }
     }
 
+    /**
+     * Envoie une valeur dans un feed (POST /api/v2/{utilisateur}/feeds/{feed}/data).
+     * Le boîtier la reçoit quelques secondes plus tard.
+     */
+    fun envoyer(utilisateur: String, cle: String, feed: String, valeur: String) {
+        val nom = URLEncoder.encode(utilisateur.trim(), "UTF-8")
+        val connexion = URL("https://io.adafruit.com/api/v2/$nom/feeds/$feed/data").openConnection() as HttpURLConnection
+        try {
+            connexion.connectTimeout = 15_000
+            connexion.readTimeout = 15_000
+            connexion.requestMethod = "POST"
+            connexion.doOutput = true
+            connexion.setRequestProperty("X-AIO-Key", cle.trim())
+            connexion.setRequestProperty("Content-Type", "application/json")
+            val corps = JSONObject().put("value", valeur).toString()
+            try {
+                connexion.outputStream.use { it.write(corps.toByteArray(Charsets.UTF_8)) }
+            } catch (e: UnknownHostException) {
+                throw ErreurLecture("Pas de connexion internet")
+            }
+            when (val code = connexion.responseCode) {
+                200, 201 -> {}
+                401, 403 -> throw ErreurLecture("Nom d'utilisateur ou clé Adafruit IO incorrects")
+                404 -> throw ErreurLecture("Feed $feed introuvable sur Adafruit IO")
+                429 -> throw ErreurLecture("Trop d'envois, réessayez dans une minute")
+                else -> throw ErreurLecture("Adafruit IO a répondu : erreur $code")
+            }
+        } finally {
+            connexion.disconnect()
+        }
+    }
+
     private fun JSONObject.optStringOuNull(nom: String): String? =
         if (isNull(nom)) null else optString(nom).ifEmpty { null }
 }
@@ -84,6 +116,17 @@ object Cache {
             .putLong("heure", System.currentTimeMillis())
             .remove("erreur")
             .apply()
+    }
+
+    /** Après un envoi : met à jour les valeurs gardées, sans attendre la prochaine lecture. */
+    fun mettreAJour(ctx: Context, valeurs: Map<String, String>) {
+        val feeds = feeds(ctx).toMutableMap()
+        val maintenant = java.time.Instant.now().toString()
+        valeurs.forEach { (cle, v) -> feeds[cle] = Valeur(v, maintenant) }
+        val heure = heure(ctx)
+        enregistrer(ctx, feeds)
+        // garder l'heure de la dernière vraie lecture
+        ctx.getSharedPreferences(FICHIER, Context.MODE_PRIVATE).edit().putLong("heure", heure).apply()
     }
 
     fun enregistrerErreur(ctx: Context, message: String) {

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Réglages : compte Adafruit IO, noms des cuves, préréglages -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fond"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="28dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Réglages"
+            android:textColor="@color/encre"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <!-- Compte Adafruit IO -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="COMPTE ADAFRUIT IO"
+            android:textColor="@color/attenue"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Sur io.adafruit.com, icône de clé jaune : nom d'utilisateur (Username) et clé (Active Key, commence par aio_)."
+            android:textColor="@color/attenue"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/champ_utilisateur"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Nom d'utilisateur"
+            android:importantForAutofill="no"
+            android:inputType="text|textNoSuggestions"
+            android:singleLine="true"
+            android:textColor="@color/encre" />
+
+        <EditText
+            android:id="@+id/champ_cle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Clé (aio_…)"
+            android:importantForAutofill="no"
+            android:inputType="textPassword"
+            android:singleLine="true"
+            android:textColor="@color/encre" />
+
+        <!-- Noms des cuves -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="NOMS DES CUVES"
+            android:textColor="@color/attenue"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/champ_nom1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cuve 1"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:singleLine="true"
+            android:textColor="@color/encre" />
+
+        <EditText
+            android:id="@+id/champ_nom2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cuve 2"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:singleLine="true"
+            android:textColor="@color/encre" />
+
+        <EditText
+            android:id="@+id/champ_nom3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cuve 3"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:singleLine="true"
+            android:textColor="@color/encre" />
+
+        <!-- Préréglages -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="PRÉRÉGLAGES"
+            android:textColor="@color/attenue"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="8dp"
+            android:text="Nom, température cible (°C) et fourchette (± °C)."
+            android:textColor="@color/attenue"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:id="@+id/liste_prereglages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <Button
+            android:id="@+id/ajouter"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@drawable/tuile"
+            android:text="+ Ajouter un préréglage"
+            android:textAllCaps="false"
+            android:textColor="@color/encre"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/bouton_enregistrer"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/onglet_actif"
+            android:text="Enregistrer et tester"
+            android:textAllCaps="false"
+            android:textColor="@color/sur_encre"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/etat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="@color/encre"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="26dp"
+            android:text="AJOUTER LE WIDGET"
+            android:textColor="@color/attenue"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Appui long sur l'écran d'accueil, Widgets, puis All your tank. Touchez une cuve du widget pour ouvrir l'appli sur cette cuve, touchez l'heure pour le mettre à jour."
+            android:textColor="@color/encre"
+            android:textSize="14sp" />
+    </LinearLayout>
+</ScrollView>

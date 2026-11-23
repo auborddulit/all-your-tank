@@ -1,13 +1,19 @@
-# Widget Android
+# Appli et widget Android
 
-Une petite appli Android qui affiche les températures des 3 cuves sur l'écran
-d'accueil du téléphone, à partir de votre compte Adafruit IO.
+Une petite appli Android pour suivre et régler les 3 cuves depuis le téléphone,
+avec un widget pour l'écran d'accueil. Elle passe toute seule en mode clair
+(fond blanc) ou sombre (fond noir) selon le réglage du téléphone.
 
-- **Une ligne par cuve** : nom, température, cible et fourchette.
-- **Rouge** quand une cuve est hors de sa fourchette (trop chaud ou trop froid),
-  **gris** quand il n'y a pas eu de mesure depuis plus de 10 minutes.
-- **Mise à jour** automatique environ toutes les 15 minutes (le minimum qu'Android
-  autorise pour un widget), et immédiate quand on touche le widget.
+**Le widget** : un cadran par cuve. La bande ambre montre la fourchette, l'aiguille
+la température. Une cuve trop chaude s'affiche en rouge, trop froide en bleu, et en
+gris quand il n'y a pas eu de mesure depuis plus de 10 minutes. Il se met à jour tout
+seul environ toutes les 15 minutes (le minimum qu'Android autorise) ; touchez l'heure
+pour le mettre à jour tout de suite, touchez une cuve pour ouvrir l'appli dessus.
+
+**L'appli** : un onglet par cuve, le grand cadran, la cible et la fourchette réglables
+avec − / +, et des **préréglages** (« Garde à froid : 2 °C ±1 »…) qui appliquent cible
+et fourchette d'un seul geste. Les réglages partent sur Adafruit IO, et le boîtier les
+reçoit quelques secondes plus tard.
 
 ## Installer l'appli
 
@@ -26,11 +32,12 @@ modification de ce dossier.
 
 ## Régler l'appli
 
-1. Ouvrez l'appli **All your tank**.
+1. Ouvrez l'appli **All your tank**, puis **Réglages**.
 2. Entrez votre **nom d'utilisateur** et votre **clé** Adafruit IO (sur io.adafruit.com,
    icône de clé jaune).
 3. Donnez un nom à chaque cuve, par exemple le nom de la bière.
-4. Touchez **Enregistrer et tester** : l'appli affiche les températures reçues.
+4. Modifiez la liste des **préréglages** si besoin : nom, cible en °C, fourchette en ± °C.
+5. Touchez **Enregistrer et tester**.
 
 La clé est gardée dans la mémoire privée de l'appli, inaccessible aux autres applis.
 Si vous perdez le téléphone, régénérez la clé sur io.adafruit.com (**Regenerate Key**),
@@ -42,32 +49,38 @@ puis mettez la nouvelle dans le boîtier (`secrets.h`).
 2. **Widgets**, puis **All your tank**.
 3. Faites glisser le widget sur l'écran, et agrandissez-le si besoin.
 
-Touchez le widget pour le mettre à jour, touchez **Brasserie ⚙** pour ouvrir les réglages.
 
 ## Comment ça marche
 
 L'appli lit en une seule requête la dernière valeur de tous les feeds du compte
-(`GET https://io.adafruit.com/api/v2/{utilisateur}/feeds`), et utilise :
+(`GET https://io.adafruit.com/api/v2/{utilisateur}/feeds`), et écrit la consigne
+dans les feeds `cible-cuveX` et `fourchette-cuveX` (`POST …/feeds/{feed}/data`) :
 
-| Feed | Affiché comme |
+| Feed | Rôle |
 |---|---|
-| `cuve1` … `cuve3` | Température |
-| `cible-cuve1` … | Cible |
-| `fourchette-cuve1` … | Fourchette ± |
+| `cuve1` … `cuve3` | Température (lue) |
+| `cible-cuve1` … | Cible (lue et écrite) |
+| `fourchette-cuve1` … | Fourchette ± (lue et écrite) |
 
-Lire des données ne compte pas dans la limite de 30 valeurs par minute du compte
-gratuit, qui ne concerne que les envois.
+Lire ne compte pas dans la limite de 30 valeurs par minute du compte gratuit. Chaque
+réglage envoyé compte pour 2 valeurs ; avec − / +, l'appli attend 1,5 seconde après le
+dernier appui avant d'envoyer, pour ne pas multiplier les envois.
 
 ## Pour les curieux : le code
 
 | Fichier | Rôle |
 |---|---|
-| `MainActivity.kt` | Écran de réglages |
-| `TankWidgetProvider.kt` | Le widget (événements d'Android, appui) |
+| `MainActivity.kt` | Écran des cuves (cadran, consigne, préréglages) |
+| `ReglagesActivity.kt` | Compte, noms des cuves, éditeur de préréglages |
+| `Jauge.kt` | Dessin du cadran (appli et widget) |
+| `Cuve.kt` | État d'une cuve (trop chaud, trop froid…) et mise en forme des nombres |
+| `Prereglages.kt` | Liste des préréglages |
+| `Palette.kt` | Couleurs du mode clair et du mode sombre |
+| `TankWidgetProvider.kt` | Le widget (événements d'Android, appuis) |
 | `Rafraichissement.kt` | Lecture régulière en tâche de fond (WorkManager) |
-| `AdafruitIO.kt` | Requête vers Adafruit IO et mémoire des dernières valeurs |
-| `Dessin.kt` | Dessin du widget (couleurs, textes) |
-| `res/layout/widget_cuves.xml` | Mise en page du widget |
+| `AdafruitIO.kt` | Lecture et envoi vers Adafruit IO, mémoire des dernières valeurs |
+| `Dessin.kt` | Dessin du widget |
+| `res/values/colors.xml`, `res/values-night/colors.xml` | Palette « Ambre », clair et sombre |
 
 Fabrication : `.github/workflows/widget-android.yml`. Pour fabriquer à la main avec
 Android Studio, ouvrez le dossier `android-widget/`.
