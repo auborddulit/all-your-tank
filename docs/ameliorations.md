@@ -43,7 +43,8 @@ inutile. À tester, après plusieurs coupures de courant, avant de la supprimer.
 
 Une sonde débranchée affiche « ERR. SONDE » à l'écran, mais ne déclenche pas d'email.
 Idée : ajouter un code spécial dans le feed `alerte` (par exemple 9) quand une sonde
-est en erreur depuis plus de quelques minutes.
+est en erreur depuis plus de quelques minutes. En attendant, l'appli Android prévient
+déjà par une notification (« la sonde ne mesure plus »).
 
 ### 5. Renommer les cuves depuis le tableau de bord
 
@@ -58,18 +59,13 @@ on pourrait remettre un feed de nom par cuve.
 Passer de 3 cuves fixes à un nombre réglable dans `config.h` (tableaux, feeds et mise
 en page calculés à partir de ce nombre).
 
-### 7. Logo au démarrage
-
-Les écrans sont prêts dans `ecrans_demarrage.h` : il reste à choisir lequel afficher et
-à l'activer par une option de `config.h`. Voir [personnaliser.md](personnaliser.md#afficher-un-logo-au-démarrage).
-
-### 8. Fichier du support imprimé en 3D
+### 7. Fichier du support imprimé en 3D
 
 Publier le fichier du support de cartes visible sur les photos.
 
 ## Matériel
 
-### 9. Alimentation dans la plage prévue
+### 8. Alimentation dans la plage prévue
 
 Voir le [point de vigilance](materiel.md#point-de-vigilance--lalimentation-5-v) :
 une alimentation 12 V sur VIN serait plus conforme à la notice du Nano ESP32.

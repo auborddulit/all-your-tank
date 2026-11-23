@@ -54,32 +54,24 @@ minute. Ne descendez pas sous **10000** (10 secondes) pour garder de la marge.
    (`ECRAN_ROTATION U8G2_R1`). Pour un écran de taille différente, il faudra ajuster
    les positions dans la fonction `dessinerCuve()` et dans `loop()`.
 
-## Afficher un logo au démarrage
+## L'écran de démarrage
 
-Le fichier [`ecrans_demarrage.h`](../firmware/all-your-tank/ecrans_demarrage.h)
-contient 3 écrans de démarrage prêts à l'emploi (64 × 128 pixels) :
+Au démarrage, l'écran affiche une petite animation pendant la connexion : l'œil
+s'ouvre, les rayons s'allument, puis « ALL YOUR TANK ARE BELONG TO US » s'écrit
+lettre par lettre. En bas, en petit, l'étape en cours (« WIFI... », « ADAFRUIT... »,
+« CONNECTE ! »). Le logo reste encore 2 secondes une fois connecté.
 
-| `cuve_canem` | `all_your_temp_oeil` | `all_your_tank_soucoupe` |
-|:---:|:---:|:---:|
-| <img src="../logos/cuve-canem-x4.png" width="96" alt="Plaque romaine CUVE CANEM"> | <img src="../logos/all-your-temp-oeil-x4.png" width="96" alt="Œil dont la pupille est un thermomètre"> | <img src="../logos/all-your-tank-soucoupe-x4.png" width="96" alt="Soucoupe volante qui enlève une cuve"> |
+<img src="../logos/all-your-tank-oeil-x4.png" width="96" alt="L'œil dont la pupille est un thermomètre, et le texte ALL YOUR TANK ARE BELONG TO US">
 
-Pour en afficher un pendant 3 secondes au démarrage :
+Tout se trouve dans [`ecran_demarrage.h`](../firmware/all-your-tank/ecran_demarrage.h) :
 
-1. En haut de `all-your-tank.ino`, sous `#include "config.h"`, ajoutez :
-   ```cpp
-   #include "ecrans_demarrage.h"
-   ```
-2. Dans `setup()`, juste après la ligne `u8g2.begin();`, ajoutez :
-   ```cpp
-   u8g2.firstPage();
-   do {
-     u8g2.drawXBMP(0, 0, cuve_canem_width, cuve_canem_height, cuve_canem_bits);
-   } while (u8g2.nextPage());
-   delay(3000);
-   ```
-3. Remplacez `cuve_canem` par le nom de l'écran de votre choix.
+- **la vitesse** : les durées en millisecondes (`PAS_LETTRE`, `PERIODE_CLIGNEMENT`…) ;
+- **le logo** : l'image `logo_oeil_bits` (64 × 128 pixels, format XBM). Pour la
+  remplacer, dessinez votre image en noir et blanc, convertissez-la en XBM (par exemple
+  avec GIMP : *Exporter sous… → .xbm*), collez les nombres à la place des anciens, et
+  ajustez les repères (lignes de l'œil, rectangles des rayons, position des lettres).
 
-Les versions PNG et SVG de ces logos sont dans le dossier [`logos/`](../logos).
+Les versions PNG et SVG du logo sont dans le dossier [`logos/`](../logos).
 
 ## Changer les textes affichés
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/banniere.png" alt="Les trois écrans de démarrage : CUVE CANEM, l'œil-thermomètre et la soucoupe volante" width="640">
+  <img src="docs/images/demarrage.gif" alt="Écran de démarrage animé : l'œil-thermomètre s'ouvre, puis « ALL YOUR TANK ARE BELONG TO US » s'écrit lettre par lettre" width="192">
 </p>
 
 <h1 align="center">All your tank are belong to us</h1>
@@ -65,7 +65,7 @@ Tout ce qui se règle est regroupé dans **un seul fichier**,
 broche des sondes, adresses et noms des cuves, cibles et fourchettes par défaut, noms des feeds,
 fréquence d'envoi, type et orientation de l'écran.
 
-Pour aller plus loin (autre écran, logo au démarrage, nombre de cuves différent) :
+Pour aller plus loin (autre écran, écran de démarrage, nombre de cuves différent) :
 [docs/personnaliser.md](docs/personnaliser.md).
 
 ## Appli Android
@@ -83,7 +83,7 @@ all-your-tank/
 │   ├── all-your-tank.ino        Programme principal (commenté)
 │   ├── config.h                 ← vos réglages
 │   ├── secrets.example.h        Modèle pour vos mots de passe (à copier en secrets.h)
-│   └── ecrans_demarrage.h       3 logos 1-bit pour l'écran (optionnel)
+│   └── ecran_demarrage.h        Écran de démarrage animé (l'œil)
 ├── outils/scan-sondes/          Petit programme pour trouver l'adresse des sondes
 ├── android-app/                 Appli Android (avec son widget)
 ├── docs/                        Toute la documentation
@@ -94,12 +94,12 @@ all-your-tank/
 │   ├── personnaliser.md         Adapter le projet
 │   ├── depannage.md             Quand ça ne marche pas
 │   └── ameliorations.md         Idées et améliorations prévues
-└── logos/                       Les logos en PNG et SVG
+└── logos/                       Le logo en PNG et SVG
 ```
 
 ## En cas de problème
 
-Écran noir, « ERR. SONDE », blocage sur « Connexion a Adafruit »… La plupart des
+Écran noir, « ERR. SONDE », blocage sur « WIFI... » ou « ADAFRUIT... »… La plupart des
 pièges sont décrits dans [docs/depannage.md](docs/depannage.md), en particulier la
 numérotation des broches du Nano ESP32, qui est différente des autres cartes ESP32.
 
@@ -117,13 +117,12 @@ jamais publié).
 
 - **Code** (`firmware/`, `outils/`) : [MIT](LICENSE). Vous pouvez le réutiliser, le
   modifier et le redistribuer librement, en gardant la mention de licence.
-- **Documentation, photos, schémas et logos** (`docs/`, `logos/`, `ecrans_demarrage.h`) :
+- **Documentation, photos, schémas et logos** (`docs/`, `logos/`, image de `ecran_demarrage.h`) :
   [CC BY-SA 4.0](LICENSE-DOCS.md). Vous pouvez les réutiliser en citant le projet,
   et vos versions modifiées doivent rester sous la même licence.
 
 Le nom est un clin d'œil au mème *« All your base are belong to us »* tiré du jeu
-vidéo *Zero Wing* (1989). La plaque *Cuve Canem* détourne le *Cave canem*
-(« Attention au chien ») des mosaïques de Pompéi.
+vidéo *Zero Wing* (1989).
 
 ## Remerciements
 

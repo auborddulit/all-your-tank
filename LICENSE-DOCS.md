@@ -6,7 +6,7 @@ Sauf mention contraire, les contenus suivants de ce dépôt sont publiés sous l
 
 - tout le dossier `docs/` (textes, photos, schémas) ;
 - tout le dossier `logos/` ;
-- le fichier `firmware/all-your-tank/ecrans_demarrage.h` (images des écrans de démarrage).
+- l'image du logo contenue dans `firmware/all-your-tank/ecran_demarrage.h`.
 
 © 2026 Les contributeurs du projet All your tank
 
@@ -27,5 +27,6 @@ Sauf mention contraire, les contenus suivants de ce dépôt sont publiés sous l
 - Résumé : <https://creativecommons.org/licenses/by-sa/4.0/deed.fr>
 - Texte juridique complet : <https://creativecommons.org/licenses/by-sa/4.0/legalcode.fr>
 
-Le **code** du projet (dossiers `firmware/` et `outils/`, hors `ecrans_demarrage.h`) est
+Le **code** du projet (dossiers `firmware/` et `outils/`, y compris le code de l'animation dans
+`ecran_demarrage.h`) est
 sous licence MIT : voir le fichier [LICENSE](LICENSE).

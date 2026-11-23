@@ -80,7 +80,9 @@ voir [adafruit-io.md](adafruit-io.md).
 ## 8. Téléverser le programme
 
 Ouvrez `firmware/all-your-tank/all-your-tank.ino` et cliquez sur **→ Téléverser**.
-L'écran affiche « Bonjour ! Connexion a Adafruit… », puis les températures.
+L'écran de démarrage s'anime (l'œil s'ouvre, le texte s'écrit), avec en bas l'étape
+en cours : « WIFI... », « ADAFRUIT... », puis « CONNECTE ! ». Ensuite, les températures
+s'affichent.
 
 **Si le téléversement échoue** : appuyez **deux fois rapidement** sur le petit bouton
 RST du Nano. La LED se met à pulser : la carte attend un programme. Choisissez à

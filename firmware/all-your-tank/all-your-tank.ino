@@ -8,7 +8,8 @@
 //  Cloud   : Adafruit IO (tableau de bord + alertes par email)
 //
 //  Ce que fait le programme :
-//    1. se connecte au WiFi puis à Adafruit IO ;
+//    1. affiche l'écran de démarrage animé (ecran_demarrage.h) et se connecte
+//       au WiFi puis à Adafruit IO ;
 //    2. récupère la température cible et la fourchette de chaque cuve
 //       (et les garde en mémoire pour le prochain démarrage) ;
 //    3. lit les 3 sondes en continu et affiche les températures à l'écran ;
@@ -37,6 +38,7 @@
 
 // --- Réglages du projet
 #include "config.h"
+#include "ecran_demarrage.h"   // écran de démarrage animé
 
 // --- Mots de passe (fichier personnel, jamais publié)
 #if __has_include("secrets.h")
@@ -119,6 +121,17 @@ void cbF2(AdafruitIO_Data *d) { majFourchette(2, d); }
 //  Démarrage
 // =============================================================================
 
+// Message affiché en bas de l'écran de démarrage, avec des points qui défilent
+unsigned long debutDemarrage = 0;
+const char *messageConnexion(bool connecte) {
+  static char texte[16];
+  if (connecte) return "CONNECTE !";
+  const char *etape = (WiFi.status() == WL_CONNECTED) ? "ADAFRUIT" : "WIFI";
+  int nb = ((millis() - debutDemarrage) / 400) % 3 + 1;
+  snprintf(texte, sizeof(texte), "%s%.*s", etape, nb, "...");
+  return texte;
+}
+
 void setup() {
   Serial.begin(115200);
   delay(2000);
@@ -145,21 +158,15 @@ void setup() {
   feedC[0]->onMessage(cbC0); feedC[1]->onMessage(cbC1); feedC[2]->onMessage(cbC2);
   feedF[0]->onMessage(cbF0); feedF[1]->onMessage(cbF1); feedF[2]->onMessage(cbF2);
 
-  // Écran d'attente avec des points animés tant que la connexion n'est pas faite.
+  // Écran de démarrage animé (ecran_demarrage.h) pendant la connexion, avec en
+  // bas l'étape en cours. On laisse l'animation aller jusqu'au bout du texte.
   // ⚠️ Sans internet, le programme attend ici (voir docs/ameliorations.md).
-  while (io.status() < AIO_CONNECTED) {
-    int nb = ((millis() / 500) % 3) + 1;
-    char pts[10] = "";
-    for (int i = 0; i < nb; i++) strcat(pts, ".");
-    u8g2.firstPage();
-    do {
-      u8g2.setFont(u8g2_font_6x10_tf);
-      u8g2.setCursor(6, 25); u8g2.print("Bonjour !");
-      u8g2.setCursor(4, 55); u8g2.print("Connexion a");
-      u8g2.setCursor(4, 70); u8g2.print("Adafruit");
-      u8g2.setCursor(4, 85); u8g2.print(pts);
-    } while (u8g2.nextPage());
-    delay(100);
+  debutDemarrage = millis();
+  while (true) {
+    bool connecte = io.status() >= AIO_CONNECTED;
+    bool introFinie = dessinerDemarrage(u8g2, millis() - debutDemarrage, messageConnexion(connecte));
+    if (connecte && introFinie) break;
+    delay(40);
   }
 
   // 4. Demander à Adafruit IO les dernières cibles et fourchettes enregistrées
@@ -182,16 +189,12 @@ void setup() {
   });
   ArduinoOTA.begin();
 
-  // 6. Message de bienvenue pendant 2 secondes
-  u8g2.firstPage();
-  do {
-    u8g2.setFont(u8g2_font_6x10_tf);
-    u8g2.setCursor(6, 25); u8g2.print("Bonjour !");
-    u8g2.setCursor(4, 55); u8g2.print("Connexion");
-    u8g2.setCursor(4, 70); u8g2.print("reussie a");
-    u8g2.setCursor(4, 85); u8g2.print("Adafruit !");
-  } while (u8g2.nextPage());
-  delay(2000);
+  // 6. Le logo reste encore 2 secondes avec « CONNECTE ! »
+  unsigned long finLogo = millis() + 2000;
+  while (millis() < finLogo) {
+    dessinerDemarrage(u8g2, millis() - debutDemarrage, "CONNECTE !");
+    delay(40);
+  }
 
   // 7. Démarrage des sondes
   sensors.begin();

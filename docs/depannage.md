@@ -64,10 +64,13 @@ sonde : vérifiez les fils rouge et noir.
 4. Un **module** OLED à 4 broches est bien plus simple qu'un écran « nu »
    (voir [materiel.md](materiel.md#à-propos-de-lécran)).
 
-## L'écran reste bloqué sur « Connexion a Adafruit… »
+## L'écran de démarrage reste bloqué sur « WIFI... » ou « ADAFRUIT... »
 
 Le programme attend internet avant de démarrer : tant que la connexion n'est pas
-établie, **les températures ne s'affichent pas**.
+établie, **les températures ne s'affichent pas**. Le message en bas de l'écran dit
+où ça bloque : **« WIFI... »** = le boîtier ne trouve pas le WiFi (nom, mot de passe,
+2,4 GHz) ; **« ADAFRUIT... »** = le WiFi marche, mais Adafruit IO refuse ou ne répond
+pas (nom d'utilisateur, clé).
 
 - Le nom et le mot de passe WiFi dans `secrets.h` sont-ils exacts (majuscules,
   caractères spéciaux) ? Un guillemet `"` dans un mot de passe s'écrit `\"`.
