@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Petite icône des notifications : l'œil, en une seule couleur (Android la teinte lui-même) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.2" android:fillColor="#00000000"
+        android:strokeLineJoin="round"
+        android:pathData="M2,13 Q12,4 22,13 Q12,22 2,13 Z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M12,13m-3.4,0a3.4,3.4 0,1 1,6.8 0a3.4,3.4 0,1 1,-6.8 0" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round"
+        android:pathData="M12,1.5V4.5M5.5,3.5L7,6M18.5,3.5L17,6" />
+</vector>

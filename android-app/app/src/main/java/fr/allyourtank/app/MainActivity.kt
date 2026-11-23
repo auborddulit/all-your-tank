@@ -1,6 +1,9 @@
 package fr.allyourtank.app
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -65,6 +68,10 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.cible_plus).setOnClickListener { modifier(cible = true, delta = 0.5) }
         findViewById<Button>(R.id.fourchette_moins).setOnClickListener { modifier(cible = false, delta = -0.5) }
         findViewById<Button>(R.id.fourchette_plus).setOnClickListener { modifier(cible = false, delta = 0.5) }
+        findViewById<Button>(R.id.bouton_actualiser).setOnClickListener {
+            if (reglages.complets) lire()
+        }
+        demanderNotifications()
         findViewById<Button>(R.id.bouton_reglages).setOnClickListener {
             startActivity(Intent(this, ReglagesActivity::class.java))
         }
@@ -95,6 +102,16 @@ class MainActivity : Activity() {
         envoyerMaintenant()   // ne pas perdre un réglage en cours
     }
 
+    /** Android 13 et plus : demander une fois l'autorisation d'afficher les alertes. */
+    private fun demanderNotifications() {
+        Alertes.creerCanal(this)
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
+    }
+
     // ------------------------------------------------------------------ données
 
     private fun chargerConsignes() {
@@ -112,12 +129,13 @@ class MainActivity : Activity() {
             val message = try {
                 val f = AdafruitIO.lireFeeds(r.utilisateur, r.cle)
                 Cache.enregistrer(this, f)
+                Alertes.verifier(this, f)
                 principal.post {
                     feeds = f
                     if (envoiEnAttente == null) chargerConsignes()
                     afficher()
                 }
-                "Mis à jour à " + SimpleDateFormat("HH:mm", Locale.FRANCE).format(Date())
+                "Mis à jour à " + SimpleDateFormat("HH:mm:ss", Locale.FRANCE).format(Date())
             } catch (e: ErreurLecture) {
                 Cache.enregistrerErreur(this, e.message ?: "Erreur")
                 "⚠ " + e.message

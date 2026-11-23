@@ -4,6 +4,8 @@
     <!-- Lire les températures sur Adafruit IO -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Alertes : cuve hors fourchette, sonde en erreur, boîtier silencieux -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="false"

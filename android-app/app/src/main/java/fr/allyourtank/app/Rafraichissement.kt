@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit
  * Tâche de fond : lit Adafruit IO, garde le résultat et redessine le widget.
  * Android la lance environ toutes les 15 minutes (le minimum qu'il autorise),
  * et tout de suite quand on touche le widget.
+ * Vérifie aussi les alertes (notifications).
  */
 class RafraichirWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params) {
 
@@ -26,7 +27,9 @@ class RafraichirWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, par
             Cache.enregistrerErreur(ctx, "Ouvrez l'appli pour la régler")
         } else {
             try {
-                Cache.enregistrer(ctx, AdafruitIO.lireFeeds(r.utilisateur, r.cle))
+                val feeds = AdafruitIO.lireFeeds(r.utilisateur, r.cle)
+                Cache.enregistrer(ctx, feeds)
+                Alertes.verifier(ctx, feeds)
             } catch (e: ErreurLecture) {
                 Cache.enregistrerErreur(ctx, e.message ?: "Erreur")
             } catch (e: Exception) {

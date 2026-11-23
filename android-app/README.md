@@ -19,7 +19,27 @@ s'empilent, une par ligne.
 **L'appli** : un onglet par cuve, le grand cadran, la cible et la fourchette réglables
 avec − / +, et des **préréglages** (« Garde à froid : 2 °C ±1 »…) qui appliquent cible
 et fourchette d'un seul geste. Les réglages partent sur Adafruit IO, et le boîtier les
-reçoit quelques secondes plus tard.
+reçoit quelques secondes plus tard. Le bouton **↻** relit tout de suite les dernières
+mesures (le boîtier en envoie toutes les 20 secondes) : pratique quand l'e-mail d'alerte
+d'Adafruit arrive.
+
+**Les notifications** : à chaque relevé (environ toutes les 15 minutes), l'appli vérifie
+les cuves et prévient avec une notification, qui suit les réglages du téléphone (son,
+vibration, pop-up) :
+
+| Notification | Quand |
+|---|---|
+| « CUVE 2 trop chaude : 21,3 °C » (ou trop froide) | La température sort de cible ± fourchette |
+| « CUVE 3 : la sonde ne mesure plus » | Une seule cuve n'a plus de mesure depuis plus de 10 min |
+| « Le boîtier n'envoie plus rien » | Aucune cuve n'a de mesure depuis plus de 10 min (courant, WiFi) |
+
+Tant que le problème dure, un rappel arrive toutes les heures. Quand tout redevient
+normal, la notification s'efface d'elle-même. Touchez-la pour ouvrir l'appli sur la cuve
+concernée. Pour une cuve vide, un préréglage « Vide » avec une très grande fourchette
+évite les alertes. Au premier lancement, Android (13 et plus) demande l'autorisation
+d'afficher des notifications : répondez **Autoriser**. Le son et le pop-up se règlent
+dans les paramètres du téléphone : Applications → All your tank → Notifications →
+« Alertes des cuves ».
 
 ## Installer l'appli
 
@@ -84,6 +104,7 @@ dernier appui avant d'envoyer, pour ne pas multiplier les envois.
 | `Palette.kt` | Couleurs du mode clair et du mode sombre |
 | `TankWidgetProvider.kt` | Le widget (événements d'Android, appuis) |
 | `Rafraichissement.kt` | Lecture régulière en tâche de fond (WorkManager) |
+| `Alertes.kt` | Notifications : hors fourchette, sonde en erreur, boîtier silencieux |
 | `AdafruitIO.kt` | Lecture et envoi vers Adafruit IO, mémoire des dernières valeurs |
 | `Dessin.kt` | Dessin du widget, adapté à sa taille (3 dispositions) |
 | `res/values/colors.xml`, `res/values-night/colors.xml` | Palette « Ambre », clair et sombre |

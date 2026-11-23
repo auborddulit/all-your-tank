@@ -71,7 +71,8 @@ Pour aller plus loin (autre écran, logo au démarrage, nombre de cuves différe
 ## Appli Android
 
 Une appli pour suivre et régler les 3 cuves depuis le téléphone : cadrans, préréglages
-(« Garde à froid »…), mode clair et sombre, et un widget pour l'écran d'accueil. Voir
+(« Garde à froid »…), notifications d'alerte, mode clair et sombre, et un widget pour
+l'écran d'accueil. Voir
 [android-app/README.md](android-app/README.md).
 
 ## Organisation du dépôt
