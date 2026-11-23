@@ -13,6 +13,9 @@ Téléchargez la version 2 sur <https://www.arduino.cc/en/software> et installez
 3. Branchez le Nano ESP32 en USB-C, puis choisissez **Outils > Carte > Arduino ESP32
    Boards > Arduino Nano ESP32** et le bon port dans **Outils > Port**.
 
+> **Box 4G qui ne donne que de l'IPv6** (Bouygues, Orange…) : il faut à la place le
+> paquet **esp32** d'Espressif, version 3 ou plus. Voir [reseau-ipv6.md](reseau-ipv6.md).
+
 > **Numérotation des broches** : le menu **Outils > Pin Numbering** propose deux
 > réglages. Dans `config.h`, la broche des sondes est donnée par son numéro de
 > **GPIO** (5 pour la borne D2). Si les sondes ne sont pas détectées, voir

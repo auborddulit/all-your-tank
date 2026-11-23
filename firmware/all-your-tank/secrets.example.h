@@ -14,6 +14,11 @@
 #define WIFI_SSID       "nom_de_votre_wifi"
 #define WIFI_PASS       "mot_de_passe_wifi"
 
+// --- Votre box ne donne internet qu'en IPv6 ? (box 4G Bouygues, Orange…)
+// Symptôme : un PC Linux a internet sur ce WiFi, mais pas un téléphone Android
+// ni le boîtier. Mettez alors true (voir docs/reseau-ipv6.md).
+#define RESEAU_IPV6_SEUL false
+
 // --- Votre compte Adafruit IO
 // Sur io.adafruit.com : cliquez sur l'icône de clé jaune (« My Key »).
 #define IO_USERNAME     "votre_nom_utilisateur_adafruit"

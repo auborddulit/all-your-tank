@@ -92,6 +92,7 @@ all-your-tank/
 │   ├── cablage.md               Câblage pas à pas
 │   ├── installation.md          Arduino IDE, bibliothèques, téléversement
 │   ├── adafruit-io.md           Tableau de bord et alertes email
+│   ├── reseau-ipv6.md           Box 4G qui ne donne que de l'IPv6
 │   ├── personnaliser.md         Adapter le projet
 │   ├── depannage.md             Quand ça ne marche pas
 │   └── ameliorations.md         Idées et améliorations prévues

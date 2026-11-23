@@ -20,7 +20,9 @@
 //       « CHAUD 1 : 21.3 C (19±1) », « SONDE 3 » (sonde muette)… ;
 //    6. accepte les mises à jour du programme par le WiFi (OTA) ;
 //    7. sans internet, continue d'afficher les températures (« HORS LIGNE »)
-//       et retente la connexion en arrière-plan.
+//       et retente la connexion en arrière-plan ;
+//    8. fonctionne aussi derrière une box 4G qui ne donne que de l'IPv6
+//       (RESEAU_IPV6_SEUL dans secrets.h, voir docs/reseau-ipv6.md).
 //
 //  Réglages : config.h        Mots de passe : secrets.h (voir secrets.example.h)
 //  Licence  : MIT (voir le fichier LICENSE à la racine du dépôt)
@@ -48,6 +50,15 @@
   #include "secrets.h"
 #else
   #error "Fichier secrets.h manquant : copiez secrets.example.h en secrets.h et remplissez-le."
+#endif
+
+// --- Réseau en IPv6 seul (voir docs/reseau-ipv6.md). Si la ligne n'est pas
+//     dans votre secrets.h, on suppose un réseau classique.
+#ifndef RESEAU_IPV6_SEUL
+  #define RESEAU_IPV6_SEUL false
+#endif
+#if RESEAU_IPV6_SEUL && (!defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3)
+  #error "RESEAU_IPV6_SEUL demande le paquet de cartes « esp32 » d'Espressif, version 3 ou plus (voir docs/reseau-ipv6.md)."
 #endif
 
 
@@ -145,11 +156,38 @@ void cbF2(AdafruitIO_Data *d) { majFourchette(2, d); }
 //  Démarrage
 // =============================================================================
 
+// Le réseau est-il prêt pour joindre Adafruit IO ?
+//  - réseau classique : il suffit d'être connecté au WiFi ;
+//  - réseau IPv6 seul : il faut aussi notre adresse IPv6 (elle arrive quelques
+//    secondes après le WiFi), sinon le premier essai partirait en IPv4, échouerait,
+//    et la bibliothèque Adafruit IO attendrait une minute avant de réessayer.
+//    On impose aussi un serveur DNS « DNS64 » (celui de Google) : il donne une
+//    adresse IPv6 spéciale (64:ff9b:…) pour les sites restés en IPv4, comme
+//    io.adafruit.com, et l'opérateur fait le pont vers l'IPv4.
+#if RESEAU_IPV6_SEUL
+const char *DNS64[2] = { "2001:4860:4860::6464", "2001:4860:4860::64" };
+#endif
+
+bool reseauPret() {
+  if (WiFi.status() != WL_CONNECTED) return false;
+#if RESEAU_IPV6_SEUL
+  if (!WiFi.STA.hasGlobalIPv6()) return false;
+  for (int i = 0; i < 2; i++) {
+    IPAddress dns;
+    dns.fromString(DNS64[i]);
+    if (WiFi.STA.dnsIP(i) != dns) WiFi.STA.dnsIP(i, dns);   // le WiFi peut l'écraser
+  }
+#endif
+  return true;
+}
+
 // Message affiché en bas de l'écran de démarrage, avec des points qui défilent
 unsigned long debutDemarrage = 0;
 const char *messageConnexion() {
   static char texte[16];
-  const char *etape = (WiFi.status() == WL_CONNECTED) ? "ADAFRUIT" : "WIFI";
+  const char *etape = "ADAFRUIT";
+  if (WiFi.status() != WL_CONNECTED) etape = "WIFI";
+  else if (!reseauPret()) etape = "IPV6";   // WiFi là, adresse IPv6 pas encore
   int nb = ((millis() - debutDemarrage) / 400) % 3 + 1;
   snprintf(texte, sizeof(texte), "%s%.*s", etape, nb, "...");
   return texte;
@@ -176,6 +214,9 @@ void setup() {
 
   // 3. Écran, puis connexion à Adafruit IO
   u8g2.begin();
+#if RESEAU_IPV6_SEUL
+  WiFi.enableIPv6();   // demander une adresse IPv6 dès la connexion au WiFi
+#endif
   io.connect();
 
   feedC[0]->onMessage(cbC0); feedC[1]->onMessage(cbC1); feedC[2]->onMessage(cbC2);
@@ -192,7 +233,7 @@ void setup() {
   //    Au bout de ATTENTE_CONNEXION_MS (config.h), on démarre sans internet.
   unsigned long dernierClignement = millis();
   while (true) {
-    enLigne = io.status() >= AIO_CONNECTED;
+    enLigne = reseauPret() && io.status() >= AIO_CONNECTED;
     if (enLigne || millis() - debutDemarrage >= ATTENTE_CONNEXION_MS) break;
     if (millis() - dernierClignement >= PERIODE_CLIGNEMENT) {
       clignerOeil(u8g2, messageConnexion());
@@ -276,7 +317,7 @@ void gererConnexion(unsigned long now) {
   }
 
   bool etaitEnLigne = enLigne;
-  enLigne = io.status() >= AIO_CONNECTED;
+  enLigne = reseauPret() && io.status() >= AIO_CONNECTED;
   if (enLigne) io.run();                       // garde la connexion Adafruit IO en vie
   if (enLigne && !etaitEnLigne) demanderReglages();   // de retour : relire les réglages
 }

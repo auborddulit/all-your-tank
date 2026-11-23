@@ -75,7 +75,12 @@ Au démarrage, le boîtier attend internet 30 secondes au plus (`ATTENTE_CONNEXI
 dans `config.h`). Le message en bas de l'écran de démarrage dit où ça bloque :
 **« WIFI... »** = le boîtier ne trouve pas le WiFi (nom, mot de passe, 2,4 GHz) ;
 **« ADAFRUIT... »** = le WiFi marche, mais Adafruit IO refuse ou ne répond pas (nom
-d'utilisateur, clé).
+d'utilisateur, clé) ; **« IPV6... »** = le boîtier attend son adresse IPv6 (option
+`RESEAU_IPV6_SEUL`).
+
+Box 4G récente chez Bouygues ou Orange : un PC Linux a internet sur ce WiFi, mais pas
+un téléphone Android ? La box ne donne sans doute que de l'IPv6 : voir
+[reseau-ipv6.md](reseau-ipv6.md).
 
 - Le nom et le mot de passe WiFi dans `secrets.h` sont-ils exacts (majuscules,
   caractères spéciaux) ? Un guillemet `"` dans un mot de passe s'écrit `\"`.
