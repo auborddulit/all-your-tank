@@ -257,7 +257,9 @@ class MainActivity : Activity() {
             e.chaud -> "Trop chaud"
             e.froid -> "Trop froid"
             e.cible == null || e.fourchette == null -> "Cible non réglée"
-            else -> "Dans la fourchette"
+            // Tout va bien : pas de message (la place reste réservée, pour que
+            // l'écran ne saute pas quand un message apparaît)
+            else -> " "
         }
 
         // Consigne
