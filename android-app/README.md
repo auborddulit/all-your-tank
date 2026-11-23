@@ -112,6 +112,21 @@ dernier appui avant d'envoyer, pour ne pas multiplier les envois.
 Fabrication : `.github/workflows/appli-android.yml`. Pour fabriquer à la main avec
 Android Studio, ouvrez le dossier `android-app/`.
 
-La clé de signature `app/appli.keystore` est volontairement publiée avec le code : elle
-permet seulement d'installer les nouvelles versions par-dessus les anciennes. Si vous
-publiez votre propre version de l'appli, générez votre propre clé.
+**Clé de signature.** Elle n'est pas dans le code : elle est gardée dans les secrets
+GitHub du dépôt (**Settings > Secrets and variables > Actions**) :
+
+| Secret | Contenu |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | le fichier de clé (PKCS12, alias `appli`), encodé en base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | son mot de passe (le même pour la clé) |
+
+Pour votre propre copie du projet, créez votre clé puis ces deux secrets :
+
+```
+keytool -genkeypair -keystore appli.p12 -storetype PKCS12 -alias appli \
+        -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 appli.p12    # à coller dans ANDROID_KEYSTORE_BASE64
+```
+
+Sans ces secrets, l'appli est signée avec la clé de test d'Android : elle s'installe,
+mais pas par-dessus une version signée avec une autre clé.

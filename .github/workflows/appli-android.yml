@@ -36,7 +36,20 @@ jobs:
         with:
           gradle-version: "8.7"
 
+      - name: Déposer la clé de signature (secrets du dépôt)
+        env:
+          CLE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$CLE_BASE64" ]; then
+            echo "$CLE_BASE64" | base64 -d > "$RUNNER_TEMP/appli.p12"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/appli.p12" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Pas de secret ANDROID_KEYSTORE_BASE64 : appli signée avec la clé de test."
+          fi
+
       - name: Fabriquer l'appli
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Renommer le fichier
