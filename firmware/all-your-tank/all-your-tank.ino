@@ -102,6 +102,7 @@ bool enAlerte[3] = { false, false, false };   // cuve hors de sa fourchette ?
 unsigned long sondeMuetteDepuis[3] = { 0, 0, 0 };
 
 bool enLigne = false;             // connecté à Adafruit IO ?
+int etatAio = -1;                 // dernier état renvoyé par io.status() (-1 = pas encore essayé)
 bool otaDemarre = false;          // mises à jour par le WiFi prêtes ? (il faut le WiFi)
 
 unsigned long lastCloud = 0;      // heure du dernier envoi des températures
@@ -172,6 +173,8 @@ const char *DNS64[2] = { "2001:4860:4860::6464", "2001:4860:4860::64" };
 // « HORS LIGNE ») et dans le moniteur série. + = oui, - = non :
 //   W = connecté au WiFi        4 = adresse IPv4 reçue
 //   L = adresse IPv6 locale     G = adresse IPv6 globale (celle qui sort sur internet)
+//   A = code d'état d'Adafruit IO (voir docs/depannage.md) : 2 = pas de réponse,
+//       11 ou 13 = connexion refusée (nom d'utilisateur ou clé), 21 = connecté
 // Exemple : « W+ 4+ L+ G- » = WiFi et IPv4 OK, mais pas encore d'adresse IPv6 globale.
 void texteEtatReseau(char *texte, size_t taille) {
   bool wifi = WiFi.status() == WL_CONNECTED;
@@ -182,6 +185,10 @@ void texteEtatReseau(char *texte, size_t taille) {
 #else
   snprintf(texte, taille, "W%c 4%c", wifi ? '+' : '-', v4 ? '+' : '-');
 #endif
+  if (etatAio >= 0) {
+    size_t l = strlen(texte);
+    snprintf(texte + l, taille - l, " A%d", etatAio);
+  }
 }
 
 // Écrit l'état du réseau dans le moniteur série (115200 bauds), toutes les
@@ -271,7 +278,8 @@ void setup() {
   unsigned long dernierClignement = millis();
   while (true) {
     journalReseau();
-    enLigne = reseauPret() && io.status() >= AIO_CONNECTED;
+    if (reseauPret()) etatAio = io.status();
+    enLigne = etatAio >= AIO_CONNECTED;
     if (enLigne || millis() - debutDemarrage >= ATTENTE_CONNEXION_MS) break;
     if (millis() - dernierClignement >= PERIODE_CLIGNEMENT) {
       clignerOeil(u8g2, messageConnexion());
@@ -371,7 +379,9 @@ void gererConnexion(unsigned long now) {
 
   bool etaitEnLigne = enLigne;
   if (!enLigne) journalReseau();
-  enLigne = reseauPret() && io.status() >= AIO_CONNECTED;
+  if (reseauPret()) etatAio = io.status();   // retente Adafruit IO au plus 1 fois/min
+  else if (etatAio >= AIO_CONNECTED) etatAio = -1;
+  enLigne = reseauPret() && etatAio >= AIO_CONNECTED;
   if (enLigne) io.run();                       // garde la connexion Adafruit IO en vie
   if (enLigne && !etaitEnLigne) demanderReglages();   // de retour : relire les réglages
 }
