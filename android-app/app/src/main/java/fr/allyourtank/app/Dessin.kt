@@ -147,11 +147,14 @@ object Dessin {
                 vue.setImageViewBitmap(JAUGES[i], Jauge.image(cadranPx, e, if (d.nuitActuelle) d.nuit else d.jour))
             }
 
-            // Couleur de la température selon l'état (sinon : celle de la mise en page)
+            // Couleur de la température selon l'état. Toujours la donner, même quand tout
+            // va bien : Android réapplique la mise à jour sur le widget déjà affiché, donc
+            // une couleur d'alerte resterait sinon après le retour à la normale.
             when {
                 e.ancienne -> couleur(vue, TEMPS[i], d.jour.attenue, d.nuit.attenue, d.nuitActuelle)
                 e.chaud -> couleur(vue, TEMPS[i], d.jour.alerte, d.nuit.alerte, d.nuitActuelle)
                 e.froid -> couleur(vue, TEMPS[i], d.jour.froid, d.nuit.froid, d.nuitActuelle)
+                else -> couleur(vue, TEMPS[i], d.jour.encre, d.nuit.encre, d.nuitActuelle)
             }
 
             // Toucher une cuve : ouvrir l'appli sur cette cuve (elle relit tout de suite)
