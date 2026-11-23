@@ -16,8 +16,11 @@
 //    4. affiche « ALERTE » (clignotant) si une cuve sort de sa fourchette,
 //       trop chaude ou trop froide ;
 //    5. envoie les températures à Adafruit IO toutes les 20 secondes,
-//       et l'état d'alerte quand il change (pour les emails) ;
-//    6. accepte les mises à jour du programme par le WiFi (OTA).
+//       et l'état d'alerte quand il change (pour les emails) : « OK »,
+//       « CHAUD 1 », « FROID 2 », « SONDE 3 » (sonde muette)… ;
+//    6. accepte les mises à jour du programme par le WiFi (OTA) ;
+//    7. sans internet, continue d'afficher les températures (« HORS LIGNE »)
+//       et retente la connexion en arrière-plan.
 //
 //  Réglages : config.h        Mots de passe : secrets.h (voir secrets.example.h)
 //  Licence  : MIT (voir le fichier LICENSE à la racine du dépôt)
@@ -84,10 +87,31 @@ float cible[3] = CIBLES_DEFAUT;
 float fourchette[3] = FOURCHETTES_DEFAUT;
 bool enAlerte[3] = { false, false, false };   // cuve hors de sa fourchette ?
 
+// Heure où chaque sonde a cessé de répondre (0 = elle répond)
+unsigned long sondeMuetteDepuis[3] = { 0, 0, 0 };
+
+bool enLigne = false;             // connecté à Adafruit IO ?
+bool otaDemarre = false;          // mises à jour par le WiFi prêtes ? (il faut le WiFi)
+
 unsigned long lastCloud = 0;      // heure du dernier envoi des températures
 unsigned long lastAlerte = 0;     // heure du dernier envoi du feed « alerte »
-int codeAlerteEnvoye = -1;        // dernier état d'alerte envoyé (-1 = jamais)
+String alerteEnvoyee = "";        // dernier texte envoyé dans « alerte » ("" = jamais)
+unsigned long dernierEssaiWifi = 0;   // pour relancer le WiFi s'il ne revient pas
+
+// Lecture des sondes sans bloquer : on lance une mesure, on la lit plus tard
+const unsigned long DUREE_MESURE_MS = (750UL >> (12 - RESOLUTION_SONDES)) + 10;
+bool mesureEnCours = false;
+unsigned long debutMesure = 0;
+
 bool altAlerte = false;           // fait clignoter le bandeau ALERTE
+unsigned long dernierClignotement = 0;
+unsigned long dernierAffichage = 0;
+
+// Fonctions écrites plus bas mais utilisées avant (l'Arduino IDE s'en passe,
+// d'autres outils non)
+void demanderReglages();
+void demarrerOTA();
+void verifierCuve(int i);
 
 
 // =============================================================================
@@ -165,9 +189,11 @@ void setup() {
   }
   // b) Connexion à Adafruit IO : chaque essai bloque un moment, alors on ne
   //    vérifie qu'avec l'œil ouvert, et on cligne de temps en temps.
-  // ⚠️ Sans internet, le programme attend ici (voir docs/ameliorations.md).
+  //    Au bout de ATTENTE_CONNEXION_MS (config.h), on démarre sans internet.
   unsigned long dernierClignement = millis();
-  while (io.status() < AIO_CONNECTED) {
+  while (true) {
+    enLigne = io.status() >= AIO_CONNECTED;
+    if (enLigne || millis() - debutDemarrage >= ATTENTE_CONNEXION_MS) break;
     if (millis() - dernierClignement >= PERIODE_CLIGNEMENT) {
       clignerOeil(u8g2, messageConnexion());
       dernierClignement = millis();
@@ -178,11 +204,8 @@ void setup() {
   }
 
   // 4. Demander à Adafruit IO les dernières cibles et fourchettes enregistrées
-  for (int i = 0; i < 3; i++) {
-    feedC[i]->get();
-    feedF[i]->get();
-    delay(200);
-  }
+  //    (sans internet : on garde celles de la mémoire)
+  if (enLigne) demanderReglages();
 
   // 5. Mises à jour par le WiFi (OTA)
   ArduinoOTA.setHostname(OTA_HOSTNAME);
@@ -195,17 +218,19 @@ void setup() {
       u8g2.setCursor(4, 70); u8g2.print("OTA...");
     } while (u8g2.nextPage());
   });
-  ArduinoOTA.begin();
+  demarrerOTA();   // seulement si le WiFi est là ; sinon plus tard, dans loop()
 
-  // 6. Le logo reste encore 2 secondes avec « CONNECTE ! »
-  dessinerLogo(u8g2, "CONNECTE !");
+  // 6. Le logo reste encore 2 secondes avec « CONNECTE ! » (ou « HORS LIGNE »)
+  const char *bilan = enLigne ? "CONNECTE !" : "HORS LIGNE";
+  dessinerLogo(u8g2, bilan);
   delay(1000);
-  clignerOeil(u8g2, "CONNECTE !");
+  clignerOeil(u8g2, bilan);
   delay(500);
 
   // 7. Démarrage des sondes
   sensors.begin();
   for (int i = 0; i < 3; i++) sensors.setResolution(addr[i], RESOLUTION_SONDES);
+  sensors.setWaitForConversion(false);   // ne pas attendre la fin des mesures
 }
 
 
@@ -217,6 +242,76 @@ void setup() {
 void formatNombre(char *buf, size_t taille, float v) {
   if (fabsf(v - roundf(v)) < 0.05f) snprintf(buf, taille, "%d", (int)roundf(v));
   else snprintf(buf, taille, "%.1f", v);
+}
+
+// Demande à Adafruit IO les dernières cibles et fourchettes enregistrées
+void demanderReglages() {
+  for (int i = 0; i < 3; i++) {
+    feedC[i]->get();
+    feedF[i]->get();
+    delay(200);
+  }
+}
+
+// Lance les mises à jour par le WiFi (OTA), une seule fois, quand le WiFi est là
+void demarrerOTA() {
+  if (otaDemarre || WiFi.status() != WL_CONNECTED) return;
+  ArduinoOTA.begin();
+  otaDemarre = true;
+}
+
+// Garde la connexion en vie, ou la retente en arrière-plan sans bloquer l'écran.
+// io.status() ne retente Adafruit IO qu'une fois par minute (règle de la
+// bibliothèque). io.run() n'est appelé qu'une fois connecté : sinon il
+// attendrait la connexion jusqu'à une minute, écran figé.
+void gererConnexion(unsigned long now) {
+  bool wifiOk = WiFi.status() == WL_CONNECTED;
+  demarrerOTA();
+  if (otaDemarre) ArduinoOTA.handle();   // une mise à jour par le WiFi est-elle demandée ?
+
+  // WiFi absent : relancer la connexion une fois par minute
+  if (!wifiOk && now - dernierEssaiWifi >= 60000) {
+    dernierEssaiWifi = now;
+    WiFi.reconnect();
+  }
+
+  bool etaitEnLigne = enLigne;
+  enLigne = io.status() >= AIO_CONNECTED;
+  if (enLigne) io.run();                       // garde la connexion Adafruit IO en vie
+  if (enLigne && !etaitEnLigne) demanderReglages();   // de retour : relire les réglages
+}
+
+// Lit le résultat de la mesure des 3 sondes, et note depuis quand une sonde est muette
+void lireSondes(unsigned long now) {
+  for (int i = 0; i < 3; i++) {
+    temp[i] = sensors.getTempC(addr[i]);
+    // 85 °C exactement = valeur d'une sonde mal alimentée, pas une vraie mesure
+    if (temp[i] == 85.0f) temp[i] = DEVICE_DISCONNECTED_C;
+    if (temp[i] == DEVICE_DISCONNECTED_C) {
+      if (sondeMuetteDepuis[i] == 0) sondeMuetteDepuis[i] = now ? now : 1;
+    } else {
+      sondeMuetteDepuis[i] = 0;
+    }
+    verifierCuve(i);
+  }
+}
+
+// Écrit l'état d'alerte en clair pour le feed « alerte » (et donc l'email) :
+// « OK », ou par exemple « CHAUD 1, SONDE 3 ».
+void texteAlerte(char *texte, size_t taille, unsigned long now) {
+  texte[0] = '\0';
+  for (int i = 0; i < 3; i++) {
+    const char *quoi = nullptr;
+    if (enAlerte[i]) {
+      quoi = temp[i] > cible[i] ? "CHAUD" : "FROID";
+    } else if (sondeMuetteDepuis[i] != 0 && now - sondeMuetteDepuis[i] >= DELAI_SONDE_MUETTE_MS) {
+      quoi = "SONDE";
+    }
+    if (quoi == nullptr) continue;
+    size_t l = strlen(texte);
+    snprintf(texte + l, taille - l, "%s%s %d", l > 0 ? ", " : "", quoi, i + 1);
+  }
+  if (texte[0] == '\0') snprintf(texte, taille, "OK");
 }
 
 // Met à jour l'état d'alerte d'une cuve, avec une marge anti-clignotement :
@@ -284,65 +379,81 @@ void dessinerCuve(int i, int y) {
 // =============================================================================
 
 void loop() {
-  ArduinoOTA.handle();   // une mise à jour par le WiFi est-elle demandée ?
-  io.run();              // garde la connexion Adafruit IO en vie
   unsigned long now = millis();
 
-  // 1. Lire les 3 sondes et vérifier les fourchettes
-  sensors.requestTemperatures();
-  bool alerteGlob = false;
-  int codeAlerte = 0;    // ex. 13 = cuves 1 et 3 hors fourchette
-  for (int i = 0; i < 3; i++) {
-    temp[i] = sensors.getTempC(addr[i]);
-    // 85 °C exactement = valeur d'une sonde mal alimentée, pas une vraie mesure
-    if (temp[i] == 85.0f) temp[i] = DEVICE_DISCONNECTED_C;
-    verifierCuve(i);
-    if (enAlerte[i]) {
-      alerteGlob = true;
-      codeAlerte = codeAlerte * 10 + (i + 1);
+  // 1. Connexion (OTA, Adafruit IO), retentée en arrière-plan si besoin
+  gererConnexion(now);
+
+  // 2. Sondes, sans bloquer : on lance une mesure, puis on lit le résultat
+  //    à un tour suivant, une fois la mesure finie (375 ms en 11 bits)
+  if (!mesureEnCours) {
+    sensors.requestTemperatures();
+    debutMesure = now;
+    mesureEnCours = true;
+  } else if (now - debutMesure >= DUREE_MESURE_MS) {
+    lireSondes(now);
+    mesureEnCours = false;
+  }
+
+  bool alerteGlob = enAlerte[0] || enAlerte[1] || enAlerte[2];
+  char alerte[48];
+  texteAlerte(alerte, sizeof(alerte), now);
+
+  if (enLigne) {
+    // 3. Envoyer les températures à Adafruit IO (voir INTERVALLE_ENVOI_MS)
+    if (now - lastCloud >= INTERVALLE_ENVOI_MS) {
+      lastCloud = now;
+      for (int i = 0; i < 3; i++) {
+        if (temp[i] != DEVICE_DISCONNECTED_C) feedT[i]->save(temp[i]);
+      }
+    }
+
+    // 4. Envoyer l'état d'alerte s'il a changé (au plus toutes les 30 s).
+    //    Hors ligne, il partira au retour de la connexion.
+    if (alerteEnvoyee != alerte && now - lastAlerte >= INTERVALLE_ALERTE_MS) {
+      lastAlerte = now;
+      alerteEnvoyee = alerte;
+      feedAlerte->save(alerte);
     }
   }
 
-  // 2. Envoyer les températures à Adafruit IO (voir INTERVALLE_ENVOI_MS)
-  if (now - lastCloud >= INTERVALLE_ENVOI_MS) {
-    lastCloud = now;
-    for (int i = 0; i < 3; i++) {
-      if (temp[i] != DEVICE_DISCONNECTED_C) feedT[i]->save(temp[i]);
-    }
+  // 5. Bandeau ALERTE : plein / contour, toutes les demi-secondes
+  if (now - dernierClignotement >= 500) {
+    dernierClignotement = now;
+    altAlerte = alerteGlob ? !altAlerte : false;
   }
 
-  // 3. Envoyer l'état d'alerte s'il a changé (au plus toutes les 30 s)
-  if (codeAlerte != codeAlerteEnvoye && now - lastAlerte >= INTERVALLE_ALERTE_MS) {
-    lastAlerte = now;
-    codeAlerteEnvoye = codeAlerte;
-    feedAlerte->save(codeAlerte);
-  }
-
-  // 4. Dessiner l'écran : 3 cuves empilées, puis le bandeau d'état en bas
+  // 6. Dessiner l'écran 4 fois par seconde : 3 cuves empilées, puis le bandeau en bas
+  if (now - dernierAffichage < 250) { delay(10); return; }
+  dernierAffichage = now;
   u8g2.firstPage();
   do {
     dessinerCuve(0, 12); u8g2.drawHLine(0, 33, 64);
     dessinerCuve(1, 46); u8g2.drawHLine(0, 67, 64);
     dessinerCuve(2, 80); u8g2.drawHLine(0, 101, 64);
 
+    // Hors ligne, le bandeau est moins haut pour laisser la place à « HORS LIGNE »
+    int hauteur = enLigne ? 24 : 16;
+    int base = enLigne ? 122 : 117;
     if (alerteGlob) {
-      // Bandeau ALERTE qui alterne plein / contour à chaque tour de boucle
+      // Bandeau ALERTE qui alterne plein / contour
       u8g2.setFont(u8g2_font_7x14B_tf);
       if (altAlerte) {
-        u8g2.drawBox(0, 104, 64, 24);
+        u8g2.drawBox(0, 104, 64, hauteur);
         u8g2.setDrawColor(0);
-        u8g2.setCursor(11, 122); u8g2.print("ALERTE");
+        u8g2.setCursor(11, base); u8g2.print("ALERTE");
         u8g2.setDrawColor(1);
       } else {
-        u8g2.drawFrame(0, 104, 64, 24);
-        u8g2.setCursor(11, 122); u8g2.print("ALERTE");
+        u8g2.drawFrame(0, 104, 64, hauteur);
+        u8g2.setCursor(11, base); u8g2.print("ALERTE");
       }
     } else {
       u8g2.setFont(u8g2_font_6x12_tf);
-      u8g2.setCursor(6, 120); u8g2.print("Temp OK !");
+      u8g2.setCursor(6, enLigne ? 120 : 115); u8g2.print("Temp OK !");
+    }
+    if (!enLigne) {
+      u8g2.setFont(u8g2_font_4x6_tf);
+      u8g2.drawStr((64 - u8g2.getStrWidth("HORS LIGNE")) / 2, 127, "HORS LIGNE");
     }
   } while (u8g2.nextPage());
-
-  if (alerteGlob) altAlerte = !altAlerte;
-  delay(50);
 }

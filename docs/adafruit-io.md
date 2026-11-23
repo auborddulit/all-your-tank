@@ -27,7 +27,7 @@ gratuit. Leurs noms doivent être écrits **exactement** comme ici :
 | `cuve1`, `cuve2`, `cuve3` | ESP32 → Adafruit IO | Température mesurée (°C) |
 | `cible-cuve1`, `cible-cuve2`, `cible-cuve3` | Adafruit IO → ESP32 | Température cible (°C) |
 | `fourchette-cuve1`, `fourchette-cuve2`, `fourchette-cuve3` | Adafruit IO → ESP32 | Écart toléré de part et d'autre de la cible (°C) |
-| `alerte` | ESP32 → Adafruit IO | Cuves hors fourchette : `0` = tout va bien, `2` = cuve 2, `13` = cuves 1 et 3… |
+| `alerte` | ESP32 → Adafruit IO | État en clair : `OK`, `CHAUD 1`, `FROID 2`, `SONDE 3`, ou plusieurs séparés par des virgules |
 
 - `cuve1` à `cuve3` et `alerte` se créent tout seuls à la première valeur envoyée
   par le boîtier.
@@ -62,17 +62,30 @@ Pour ranger les blocs : engrenage > **Edit Layout**, puis **Save Layout**.
 
 ## 4. Recevoir les alertes par email
 
-L'ESP32 compare lui-même chaque température à sa cible et à sa fourchette. Quand une
-cuve sort de sa fourchette (trop chaude **ou** trop froide), il envoie le numéro des
-cuves concernées dans le feed `alerte`. Il suffit donc d'une seule règle :
+L'ESP32 compare lui-même chaque température à sa cible et à sa fourchette, et
+surveille les sondes. Il écrit l'état en clair dans le feed `alerte` :
 
-1. Menu **Actions** > **New Action**, type **Reactive** (réaction à une valeur).
-2. Règle : *si* le feed **`alerte`** est **supérieur à** `0`, *alors* **envoyer un email**.
-3. Si l'option est proposée, activez aussi la notification quand la valeur revient
-   à `0`, pour être prévenu que tout est rentré dans l'ordre.
+| Valeur | Signification |
+|---|---|
+| `OK` | tout va bien |
+| `CHAUD 1` | cuve 1 au-dessus de sa fourchette |
+| `FROID 2` | cuve 2 en dessous de sa fourchette |
+| `SONDE 3` | la sonde de la cuve 3 ne répond plus depuis 2 minutes (`DELAI_SONDE_MUETTE_MS`) |
+| `CHAUD 1, SONDE 3` | plusieurs problèmes en même temps |
 
-La valeur reçue dans l'email indique les cuves concernées : `1`, `2`, `3`, ou `13`
-pour les cuves 1 et 3.
+Il suffit donc d'une seule règle : *si* `alerte` est **différent de** `OK`, *alors*
+**envoyer un email**.
+
+1. Menu **Actions** > **New Action** (éditeur à blocs).
+2. Dans le bloc **Reactive**, choisissez le feed **`alerte`**.
+3. Pour la condition, prenez dans la catégorie **Triggers** le bloc **Compare Text Matcher**
+   (comparaison de texte), réglez-le sur **≠** et tapez `OK` (en majuscules).
+4. En action, un bloc **Email**, avec dans le texte la valeur du feed (`{{value}}`),
+   par exemple : « Brasserie : {{value}} ».
+5. Enregistrez.
+
+> **Vous aviez la règle « supérieur à 0 » d'une version précédente ?** Elle ne marche
+> plus avec du texte : remplacez la condition comme ci-dessus.
 
 Pour éviter une rafale d'emails, l'ESP32 n'envoie le feed `alerte` que quand l'état
 change, au plus une fois toutes les 30 secondes, et une cuve ne sort d'alerte qu'en

@@ -98,6 +98,15 @@
 // et au plus une fois toutes les 30 secondes.
 #define INTERVALLE_ALERTE_MS    30000
 
+// Une sonde qui ne répond plus depuis ce temps déclenche l'alerte « SONDE n »
+// (2 minutes : on ignore un simple faux contact).
+#define DELAI_SONDE_MUETTE_MS   120000
+
+// Au démarrage, temps d'attente maximal d'internet. Passé ce délai, l'écran
+// affiche quand même les températures (avec « HORS LIGNE ») et le boîtier
+// continue d'essayer de se connecter en arrière-plan.
+#define ATTENTE_CONNEXION_MS    30000
+
 
 // -----------------------------------------------------------------------------
 //  4. Écran OLED

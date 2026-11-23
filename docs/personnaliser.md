@@ -75,7 +75,7 @@ Les versions PNG et SVG du logo sont dans le dossier [`logos/`](../logos).
 
 ## Changer les textes affichés
 
-Les messages (« Bonjour ! », « Temp OK ! », « ALERTE »…) sont écrits directement
+Les messages (« Temp OK ! », « ALERTE », « HORS LIGNE »…) sont écrits directement
 dans `all-your-tank.ino`. Gardez-les courts : l'écran ne fait que 64 pixels de large,
 soit environ 10 caractères. Évitez les accents.
 

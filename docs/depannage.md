@@ -24,7 +24,7 @@ C'est pour cela que `config.h` indique **5** pour la borne **D2**.
 
 Le « réveil des broches » du démarrage agit sur plusieurs de ces bornes : avant de
 brancher autre chose sur D3 à D5 ou A1 à A3, lisez
-[ameliorations.md](ameliorations.md#2-comprendre-et-si-possible-retirer-le--réveil-des-broches-).
+[ameliorations.md](ameliorations.md#1-comprendre-et-si-possible-retirer-le--réveil-des-broches-).
 
 Le brochage complet est sur la
 [fiche officielle d'Arduino](https://docs.arduino.cc/resources/pinouts/ABX00083-full-pinout.pdf).
@@ -64,13 +64,18 @@ sonde : vérifiez les fils rouge et noir.
 4. Un **module** OLED à 4 broches est bien plus simple qu'un écran « nu »
    (voir [materiel.md](materiel.md#à-propos-de-lécran)).
 
-## L'écran de démarrage reste bloqué sur « WIFI... » ou « ADAFRUIT... »
+## L'écran affiche « HORS LIGNE »
 
-Le programme attend internet avant de démarrer : tant que la connexion n'est pas
-établie, **les températures ne s'affichent pas**. Le message en bas de l'écran dit
-où ça bloque : **« WIFI... »** = le boîtier ne trouve pas le WiFi (nom, mot de passe,
-2,4 GHz) ; **« ADAFRUIT... »** = le WiFi marche, mais Adafruit IO refuse ou ne répond
-pas (nom d'utilisateur, clé).
+Le boîtier n'a pas pu se connecter à Adafruit IO. Il affiche quand même les
+températures et les alertes (avec les cibles et fourchettes gardées en mémoire), mais
+**n'envoie rien** : ni températures, ni emails. Il réessaie tout seul, en arrière-plan,
+et « HORS LIGNE » disparaît dès que la connexion revient.
+
+Au démarrage, le boîtier attend internet 30 secondes au plus (`ATTENTE_CONNEXION_MS`
+dans `config.h`). Le message en bas de l'écran de démarrage dit où ça bloque :
+**« WIFI... »** = le boîtier ne trouve pas le WiFi (nom, mot de passe, 2,4 GHz) ;
+**« ADAFRUIT... »** = le WiFi marche, mais Adafruit IO refuse ou ne répond pas (nom
+d'utilisateur, clé).
 
 - Le nom et le mot de passe WiFi dans `secrets.h` sont-ils exacts (majuscules,
   caractères spéciaux) ? Un guillemet `"` dans un mot de passe s'écrit `\"`.

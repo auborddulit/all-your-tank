@@ -5,17 +5,7 @@ du plus utile au plus accessoire. Les contributions sont bienvenues.
 
 ## Robustesse
 
-### 1. Continuer à afficher les températures sans internet
-
-Aujourd'hui, au démarrage, le programme attend la connexion à Adafruit IO dans une
-boucle sans fin. Si la box 4G est en panne au moment d'une coupure de courant,
-**l'écran reste sur « Connexion… » et n'affiche aucune température**, alors que les
-sondes fonctionnent.
-
-Idée : limiter l'attente (par exemple 30 secondes), puis démarrer l'affichage local et
-laisser `io.run()` retenter la connexion en arrière-plan.
-
-### 2. Comprendre et, si possible, retirer le « réveil des broches »
+### 1. Comprendre et, si possible, retirer le « réveil des broches »
 
 Au démarrage, le programme crée un bus OneWire sur les numéros 2, 3, 4 et 5
 (`BROCHES_REVEIL`) pour « réveiller » le matériel. Cette astuce a été trouvée pendant
@@ -31,22 +21,9 @@ alors la mauvaise borne, et c'est `OneWire(2)` de l'astuce qui préparerait la b
 Si c'est bien ça, passer le réglage sur **By GPIO number (legacy)** rendrait l'astuce
 inutile. À tester, après plusieurs coupures de courant, avant de la supprimer.
 
-### 3. Lire les sondes sans bloquer
+## Tableau de bord
 
-`sensors.requestTemperatures()` attend la fin de la mesure (environ 375 ms en 11 bits)
-à chaque tour de boucle. Pendant ce temps, rien d'autre ne se passe. Idée : utiliser
-`sensors.setWaitForConversion(false)` et lire le résultat au tour suivant.
-
-## Alertes
-
-### 4. Prévenir aussi quand une sonde ne répond plus
-
-Une sonde débranchée affiche « ERR. SONDE » à l'écran, mais ne déclenche pas d'email.
-Idée : ajouter un code spécial dans le feed `alerte` (par exemple 9) quand une sonde
-est en erreur depuis plus de quelques minutes. En attendant, l'appli Android prévient
-déjà par une notification (« la sonde ne mesure plus »).
-
-### 5. Renommer les cuves depuis le tableau de bord
+### 2. Renommer les cuves depuis le tableau de bord
 
 Les noms sont fixés dans `config.h`, car les 10 feeds du compte gratuit servent aux
 températures, cibles, fourchettes et alertes. Avec Adafruit IO+ (feeds illimités),
@@ -54,18 +31,18 @@ on pourrait remettre un feed de nom par cuve.
 
 ## Confort
 
-### 6. Nombre de cuves réglable
+### 3. Nombre de cuves réglable
 
 Passer de 3 cuves fixes à un nombre réglable dans `config.h` (tableaux, feeds et mise
 en page calculés à partir de ce nombre).
 
-### 7. Fichier du support imprimé en 3D
+### 4. Fichier du support imprimé en 3D
 
 Publier le fichier du support de cartes visible sur les photos.
 
 ## Matériel
 
-### 8. Alimentation dans la plage prévue
+### 5. Alimentation dans la plage prévue
 
 Voir le [point de vigilance](materiel.md#point-de-vigilance--lalimentation-5-v) :
 une alimentation 12 V sur VIN serait plus conforme à la notice du Nano ESP32.
@@ -76,6 +53,13 @@ une alimentation 12 V sur VIN serait plus conforme à la notice du Nano ESP32.
 - **Alerte trop chaud et trop froid**, avec une marge anti-clignotement (`HYSTERESIS`).
 - **Un seul réglage pour l'écran et les emails** : l'ESP32 envoie lui-même le feed `alerte`.
 - **Valeur 85 °C ignorée** : elle s'affiche comme une erreur de sonde.
+- **Écran de démarrage animé**, qui dit où en est la connexion (« WIFI... », « ADAFRUIT... »).
+- **Températures affichées sans internet** : après 30 secondes d'attente au démarrage,
+  l'écran affiche les cuves avec « HORS LIGNE », et le boîtier se reconnecte en
+  arrière-plan.
+- **Lecture des sondes sans blocage** : l'écran et la connexion restent fluides.
+- **Alertes en clair** dans le feed `alerte` (« CHAUD 1 », « FROID 2 »), y compris pour
+  une **sonde qui ne répond plus** (« SONDE 3 »).
 
 ## Pour plus tard
 
