@@ -168,6 +168,23 @@ void cbF2(AdafruitIO_Data *d) { majFourchette(2, d); }
 const char *DNS64[2] = { "2001:4860:4860::6464", "2001:4860:4860::64" };
 #endif
 
+// Affiche l'état du réseau dans le moniteur série (115200 bauds), toutes les
+// 5 secondes au plus : utile pour comprendre un blocage sur « IPV6... ».
+void journalReseau() {
+  static unsigned long dernier = 0;
+  if (millis() - dernier < 5000) return;
+  dernier = millis();
+  Serial.printf("[reseau] WiFi %s  IPv4 %s", WiFi.status() == WL_CONNECTED ? "OK" : "--",
+                WiFi.localIP().toString().c_str());
+#if RESEAU_IPV6_SEUL
+  Serial.printf("  IPv6 locale %s  IPv6 globale %s  DNS %s",
+                WiFi.linkLocalIPv6().toString().c_str(),
+                WiFi.globalIPv6().toString().c_str(),
+                WiFi.STA.dnsIP(0).toString().c_str());
+#endif
+  Serial.println();
+}
+
 bool reseauPret() {
   if (WiFi.status() != WL_CONNECTED) return false;
 #if RESEAU_IPV6_SEUL
@@ -216,6 +233,9 @@ void setup() {
   u8g2.begin();
 #if RESEAU_IPV6_SEUL
   WiFi.enableIPv6();   // demander une adresse IPv6 dès la connexion au WiFi
+  // Pas de mise en veille du WiFi : en veille, l'ESP32 peut rater l'annonce
+  // du routeur qui donne l'adresse IPv6 (boîtier sur secteur : pas d'enjeu).
+  WiFi.setSleep(false);
 #endif
   io.connect();
 
@@ -233,6 +253,7 @@ void setup() {
   //    Au bout de ATTENTE_CONNEXION_MS (config.h), on démarre sans internet.
   unsigned long dernierClignement = millis();
   while (true) {
+    journalReseau();
     enLigne = reseauPret() && io.status() >= AIO_CONNECTED;
     if (enLigne || millis() - debutDemarrage >= ATTENTE_CONNEXION_MS) break;
     if (millis() - dernierClignement >= PERIODE_CLIGNEMENT) {
@@ -317,6 +338,7 @@ void gererConnexion(unsigned long now) {
   }
 
   bool etaitEnLigne = enLigne;
+  if (!enLigne) journalReseau();
   enLigne = reseauPret() && io.status() >= AIO_CONNECTED;
   if (enLigne) io.run();                       // garde la connexion Adafruit IO en vie
   if (enLigne && !etaitEnLigne) demanderReglages();   // de retour : relire les réglages
