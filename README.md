@@ -68,6 +68,12 @@ fréquence d'envoi, type et orientation de l'écran.
 Pour aller plus loin (autre écran, logo au démarrage, nombre de cuves différent) :
 [docs/personnaliser.md](docs/personnaliser.md).
 
+## Widget Android
+
+Une petite appli affiche les températures des 3 cuves sur l'écran d'accueil du
+téléphone, en rouge quand une cuve sort de sa fourchette : voir
+[android-widget/README.md](android-widget/README.md).
+
 ## Organisation du dépôt
 
 ```text
@@ -78,6 +84,7 @@ all-your-tank/
 │   ├── secrets.example.h        Modèle pour vos mots de passe (à copier en secrets.h)
 │   └── ecrans_demarrage.h       3 logos 1-bit pour l'écran (optionnel)
 ├── outils/scan-sondes/          Petit programme pour trouver l'adresse des sondes
+├── android-widget/              Appli Android : widget des températures
 ├── docs/                        Toute la documentation
 │   ├── materiel.md              Liste du matériel
 │   ├── cablage.md               Câblage pas à pas

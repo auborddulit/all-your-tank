@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="All your tank"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Températures des cuves de la brasserie, sur l'écran d'accueil."
+            android:textSize="14sp" />
+
+        <!-- Compte Adafruit IO -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Compte Adafruit IO"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Sur io.adafruit.com, cliquez sur l'icône de clé jaune : vous y trouvez le nom d'utilisateur (Username) et la clé (Active Key, elle commence par aio_)."
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nom d'utilisateur" />
+
+        <EditText
+            android:id="@+id/champ_utilisateur"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="votre_nom"
+            android:importantForAutofill="no"
+            android:inputType="text|textNoSuggestions"
+            android:singleLine="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Clé (Active Key)" />
+
+        <EditText
+            android:id="@+id/champ_cle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="aio_…"
+            android:importantForAutofill="no"
+            android:inputType="textPassword"
+            android:singleLine="true" />
+
+        <!-- Noms des cuves -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Noms des cuves"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Les noms affichés sur le widget (par exemple le nom de la bière)."
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/champ_nom1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cuve 1"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:singleLine="true" />
+
+        <EditText
+            android:id="@+id/champ_nom2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cuve 2"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:singleLine="true" />
+
+        <EditText
+            android:id="@+id/champ_nom3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cuve 3"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:singleLine="true" />
+
+        <Button
+            android:id="@+id/bouton_enregistrer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Enregistrer et tester" />
+
+        <TextView
+            android:id="@+id/etat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textSize="15sp" />
+
+        <!-- Mode d'emploi -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Ajouter le widget"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Appui long sur un espace vide de l'écran d'accueil.\n2. Widgets, puis All your tank.\n3. Faites glisser le widget sur l'écran.\n\nLe widget se met à jour tout seul environ toutes les 15 minutes. Touchez-le pour le mettre à jour tout de suite, touchez « Brasserie ⚙ » pour revenir ici.\n\nCouleurs : rouge = hors fourchette, gris = pas de mesure récente."
+            android:textSize="14sp" />
+    </LinearLayout>
+</ScrollView>
