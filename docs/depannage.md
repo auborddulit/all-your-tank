@@ -89,8 +89,7 @@ En bas de l'écran, « HORS LIGNE » alterne avec deux codes d'état, par exempl
 | `A` suivi d'un nombre | réponse d'Adafruit IO : `2` = pas de réponse (internet, pare-feu), `11` ou `13` = connexion refusée (nom d'utilisateur ou clé dans `secrets.h`), `21` = connecté |
 | `D` | recherche du nom `io.adafruit.com` : `6` ou `4` = adresse trouvée (IPv6 / IPv4), `-` = échec (DNS) |
 | `T` | le port d'Adafruit IO (8883) répond-il ? `+` = oui, `-` = non (blocage sur le chemin) |
-| `U` (IPv6 seul) | une requête DNS envoyée « à la main » au DNS64 de Google reçoit-elle une réponse ? |
-| `0:`, `1:` (IPv6 seul) | type des deux serveurs DNS réglés : `6` = IPv6, `4` = IPv4, `-` = aucun |
+| `U` (IPv6 seul) | une requête DNS envoyée « à la main » au DNS64 de Google reçoit-elle une réponse ? Suivi du début de l’adresse du serveur DNS utilisé |
 
 Box 4G récente chez Bouygues ou Orange : un PC Linux a internet sur ce WiFi, mais pas
 un téléphone Android ? La box ne donne sans doute que de l'IPv6 : voir

@@ -171,7 +171,37 @@ void cbF2(AdafruitIO_Data *d) { majFourchette(2, d); }
 //    io.adafruit.com (l'opérateur fait le pont vers l'IPv4) ; en secours, celui
 //    du routeur, qui transmet en général au DNS64 de l'opérateur.
 #if RESEAU_IPV6_SEUL
+#include "lwip/dns.h"
+#include "lwip/tcpip.h"
 const char *DNS64_GOOGLE = "2001:4860:4860::6464";
+
+// Règle le serveur DNS n° i directement dans la pile réseau (lwIP), sans passer
+// par les couches d'Arduino. Renvoie true s'il est bien en place.
+bool reglerDns(int i, const char *adresse) {
+  ip_addr_t voulu;
+  if (!ipaddr_aton(adresse, &voulu)) return false;
+  bool verrou = !sys_thread_tcpip(LWIP_CORE_LOCK_QUERY_HOLDER);
+  if (verrou) LOCK_TCPIP_CORE();
+  const ip_addr_t *actuel = dns_getserver(i);
+  bool ok = actuel != NULL && ip_addr_eq(actuel, &voulu);
+  if (!ok) {
+    dns_setserver(i, &voulu);
+    actuel = dns_getserver(i);
+    ok = actuel != NULL && ip_addr_eq(actuel, &voulu);
+  }
+  if (verrou) UNLOCK_TCPIP_CORE();
+  return ok;
+}
+
+// Adresse du serveur DNS n° i telle que la pile réseau la voit (pour l'écran)
+void lireDns(int i, char *texte, size_t taille) {
+  bool verrou = !sys_thread_tcpip(LWIP_CORE_LOCK_QUERY_HOLDER);
+  if (verrou) LOCK_TCPIP_CORE();
+  const ip_addr_t *a = dns_getserver(i);
+  if (a == NULL || ip_addr_isany(a)) snprintf(texte, taille, "aucun");
+  else ipaddr_ntoa_r(a, texte, taille);
+  if (verrou) UNLOCK_TCPIP_CORE();
+}
 #endif
 
 // État du réseau en abrégé, affiché en bas de l'écran (en alternance avec
@@ -202,16 +232,13 @@ void texteEtatAdafruit(char *texte, size_t taille) {
 }
 
 #if RESEAU_IPV6_SEUL
-// Troisième ligne (IPv6 seul) : « U+ 0:6 1:4 »
+// Troisième ligne (IPv6 seul) : « U+ 2001:4860:4 »
 //   U = notre propre requête DNS (sans passer par le système) au DNS64 de Google
-//   0:, 1: = type des serveurs DNS réglés dans le système (6 = IPv6, 4 = IPv4, - = aucun)
+//   puis le début de l'adresse du 1er serveur DNS réellement utilisé
 void texteEtatDns(char *texte, size_t taille) {
-  char t[2];
-  for (int i = 0; i < 2; i++) {
-    IPAddress d = WiFi.STA.dnsIP(i);
-    t[i] = d.type() == IPv6 ? '6' : (d == IPAddress((uint32_t)0) ? '-' : '4');
-  }
-  snprintf(texte, taille, "U%c 0:%c 1:%c", testUdp, t[0], t[1]);
+  char d0[48];
+  lireDns(0, d0, sizeof(d0));
+  snprintf(texte, taille, "U%c %.11s", testUdp, d0);   // ex. « U+ 2001:4860:4 »
 }
 
 // Envoie nous-mêmes une requête DNS (type AAAA, io.adafruit.com) au DNS64 de
@@ -224,7 +251,7 @@ char requeteDnsManuelle() {
   IPAddress serveur;
   serveur.fromString(DNS64_GOOGLE);
   NetworkUDP udp;
-  if (!udp.begin(0)) return '?';
+  if (!udp.begin(IPAddress(IPv6), 0)) return '?';   // socket IPv6
   udp.beginPacket(serveur, 53);
   udp.write(requete, sizeof(requete));
   if (!udp.endPacket()) { udp.stop(); return '-'; }
@@ -306,12 +333,10 @@ bool reseauPret() {
   if (WiFi.status() != WL_CONNECTED) return false;
 #if RESEAU_IPV6_SEUL
   if (!WiFi.STA.hasGlobalIPv6()) return false;
-  IPAddress dns[2];
-  dns[0].fromString(DNS64_GOOGLE);
-  dns[1] = WiFi.gatewayIP();   // le routeur
-  for (int i = 0; i < 2; i++) {
-    if (WiFi.STA.dnsIP(i) != dns[i]) WiFi.STA.dnsIP(i, dns[i]);   // le WiFi peut les écraser
-  }
+  // Le WiFi (DHCP) et le routeur (annonces IPv6) peuvent écraser nos réglages :
+  // on les remet à chaque tour
+  reglerDns(0, DNS64_GOOGLE);
+  reglerDns(1, WiFi.gatewayIP().toString().c_str());   // le routeur, en secours
 #endif
   return true;
 }
