@@ -29,7 +29,6 @@ class TankWidgetProvider : AppWidgetProvider() {
     override fun onReceive(ctx: Context, intent: Intent) {
         super.onReceive(ctx, intent)
         if (intent.action == ACTION_RAFRAICHIR) {
-            Dessin.afficherChargement(ctx)
             RafraichirWorker.maintenant(ctx)
         }
     }

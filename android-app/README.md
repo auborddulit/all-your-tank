@@ -4,11 +4,12 @@ Une petite appli Android pour suivre et régler les 3 cuves depuis le téléphon
 avec un widget pour l'écran d'accueil. Elle passe toute seule en mode clair
 (fond blanc) ou sombre (fond noir) selon le réglage du téléphone.
 
-**Le widget** : un cadran par cuve. La bande ambre montre la fourchette, l'aiguille
-la température. Une cuve trop chaude s'affiche en rouge, trop froide en bleu, et en
-gris quand il n'y a pas eu de mesure depuis plus de 10 minutes. Il se met à jour tout
-seul environ toutes les 15 minutes (le minimum qu'Android autorise) ; touchez l'heure
-pour le mettre à jour tout de suite, touchez une cuve pour ouvrir l'appli dessus.
+**Le widget** : pour chaque cuve, un cadran fin à graduations (un trait par degré, la
+fourchette en ambre, une aiguille courte), la température et le nom. Une cuve trop chaude
+s'affiche en rouge, trop froide en bleu, et en gris quand il n'y a pas eu de mesure
+depuis plus de 10 minutes. Il se met à jour tout seul environ toutes les 15 minutes (le
+minimum qu'Android autorise) ; touchez une cuve pour ouvrir l'appli dessus, ce qui
+relit aussi les températures et met le widget à jour.
 
 **L'appli** : un onglet par cuve, le grand cadran, la cible et la fourchette réglables
 avec − / +, et des **préréglages** (« Garde à froid : 2 °C ±1 »…) qui appliquent cible

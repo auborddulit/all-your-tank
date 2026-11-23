@@ -64,10 +64,61 @@ object Jauge {
         }
     }
 
-    /** Image du cadran, pour le widget. */
+    // ------------------------------------------------------------------ version fine du widget
+
+    /** Hauteur du cadran à graduations pour une largeur donnée. */
+    fun hauteurGraduations(largeur: Float): Float = largeur * 0.58f
+
+    /**
+     * Cadran à graduations (widget) : un trait par degré, plus long tous les 5 °C,
+     * les traits de la fourchette en ambre, une aiguille courte et fine.
+     */
+    fun dessinerGraduations(canvas: Canvas, largeur: Float, e: EtatCuve, p: Palette) {
+        val s = largeur / 100f
+        val cx = 50f * s
+        val cy = 52f * s
+        val r = 40f * s
+        val trait = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.BUTT }
+
+        for (v in 0..MAX.toInt()) {
+            val degre = v.toDouble()
+            val dansFourchette = e.cible != null && e.fourchette != null &&
+                degre >= e.cible - e.fourchette - 1e-6 && degre <= e.cible + e.fourchette + 1e-6
+            val long = v % 5 == 0
+            val a = Math.PI * (1 - v / MAX)
+            val r1 = r - (if (long) 7f else 4f) * s
+            trait.color = if (dansFourchette) p.bande else p.piste
+            trait.strokeWidth = (if (dansFourchette) 1.4f else 1f) * s
+            canvas.drawLine(
+                cx + r1 * cos(a).toFloat(), cy - r1 * sin(a).toFloat(),
+                cx + r * cos(a).toFloat(), cy - r * sin(a).toFloat(),
+                trait,
+            )
+        }
+
+        if (e.temp != null) {
+            val couleur = when {
+                e.ancienne -> p.attenue
+                e.chaud -> p.alerte
+                e.froid -> p.froid
+                else -> p.encre
+            }
+            val a = Math.PI * (1 - e.temp.coerceIn(0.0, MAX) / MAX)
+            val aiguille = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = couleur
+                strokeWidth = 1.4f * s
+                strokeCap = Paint.Cap.ROUND
+            }
+            canvas.drawLine(cx, cy, cx + 28f * s * cos(a).toFloat(), cy - 28f * s * sin(a).toFloat(), aiguille)
+            aiguille.style = Paint.Style.FILL
+            canvas.drawCircle(cx, cy, 2.2f * s, aiguille)
+        }
+    }
+
+    /** Image du cadran à graduations, pour le widget. */
     fun image(largeurPx: Int, e: EtatCuve, p: Palette): Bitmap {
-        val b = Bitmap.createBitmap(largeurPx, hauteur(largeurPx.toFloat()).toInt(), Bitmap.Config.ARGB_8888)
-        dessiner(Canvas(b), largeurPx.toFloat(), e, p)
+        val b = Bitmap.createBitmap(largeurPx, hauteurGraduations(largeurPx.toFloat()).toInt(), Bitmap.Config.ARGB_8888)
+        dessinerGraduations(Canvas(b), largeurPx.toFloat(), e, p)
         return b
     }
 

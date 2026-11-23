@@ -170,7 +170,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Appui long sur l'écran d'accueil, Widgets, puis All your tank. Touchez une cuve du widget pour ouvrir l'appli sur cette cuve, touchez l'heure pour le mettre à jour."
+            android:text="Appui long sur l'écran d'accueil, Widgets, puis All your tank. Touchez une cuve du widget pour ouvrir l'appli sur cette cuve : l'appli relit aussitôt les températures et met le widget à jour."
             android:textColor="@color/encre"
             android:textSize="14sp" />
     </LinearLayout>

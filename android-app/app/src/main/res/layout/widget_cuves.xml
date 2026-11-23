@@ -1,199 +1,141 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Le widget : un en-tête, puis un cadran par cuve. Couleurs : res/values(-night)/colors.xml -->
+<!-- Le widget : un cadran à graduations par cuve, la température et le nom.
+     Couleurs : res/values(-night)/colors.xml -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/racine"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/fond_widget"
-    android:orientation="vertical"
-    android:paddingStart="12dp"
-    android:paddingTop="12dp"
-    android:paddingEnd="12dp"
-    android:paddingBottom="10dp">
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="14dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="14dp">
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/col1"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp"
-        android:paddingBottom="4dp">
+        android:layout_weight="1"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp">
+
+        <ImageView
+            android:id="@+id/jauge1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:contentDescription="Cadran de la cuve 1" />
 
         <TextView
-            android:id="@+id/titre"
+            android:id="@+id/temp1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Brasserie"
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif-light"
+            android:text="--"
             android:textColor="@color/encre"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+            android:textSize="22sp" />
 
         <TextView
-            android:id="@+id/heure"
-            android:layout_width="0dp"
+            android:id="@+id/nom1"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_marginTop="2dp"
             android:ellipsize="end"
-            android:gravity="end"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.06"
             android:maxLines="1"
-            android:paddingStart="8dp"
-            android:paddingTop="6dp"
-            android:paddingBottom="6dp"
-            android:text=""
+            android:text="Cuve 1"
+            android:textAllCaps="true"
             android:textColor="@color/attenue"
-            android:textSize="13sp" />
+            android:textSize="11sp" />
     </LinearLayout>
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:id="@+id/col2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp">
 
-        <LinearLayout
-            android:id="@+id/col1"
-            android:layout_width="0dp"
+        <ImageView
+            android:id="@+id/jauge2"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:paddingStart="3dp"
-            android:paddingEnd="3dp">
+            android:adjustViewBounds="true"
+            android:contentDescription="Cadran de la cuve 2" />
 
-            <ImageView
-                android:id="@+id/jauge1"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:contentDescription="Cadran de la cuve 1" />
-
-            <TextView
-                android:id="@+id/temp1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="--"
-                android:textColor="@color/encre"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/nom1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Cuve 1"
-                android:textColor="@color/encre"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/detail1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text=""
-                android:textColor="@color/attenue"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/col2"
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/temp2"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:paddingStart="3dp"
-            android:paddingEnd="3dp">
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif-light"
+            android:text="--"
+            android:textColor="@color/encre"
+            android:textSize="22sp" />
 
-            <ImageView
-                android:id="@+id/jauge2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:contentDescription="Cadran de la cuve 2" />
-
-            <TextView
-                android:id="@+id/temp2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="--"
-                android:textColor="@color/encre"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/nom2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Cuve 2"
-                android:textColor="@color/encre"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/detail2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text=""
-                android:textColor="@color/attenue"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/col3"
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/nom2"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:paddingStart="3dp"
-            android:paddingEnd="3dp">
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.06"
+            android:maxLines="1"
+            android:text="Cuve 2"
+            android:textAllCaps="true"
+            android:textColor="@color/attenue"
+            android:textSize="11sp" />
+    </LinearLayout>
 
-            <ImageView
-                android:id="@+id/jauge3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:contentDescription="Cadran de la cuve 3" />
+    <LinearLayout
+        android:id="@+id/col3"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp">
 
-            <TextView
-                android:id="@+id/temp3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="--"
-                android:textColor="@color/encre"
-                android:textSize="22sp"
-                android:textStyle="bold" />
+        <ImageView
+            android:id="@+id/jauge3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:contentDescription="Cadran de la cuve 3" />
 
-            <TextView
-                android:id="@+id/nom3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Cuve 3"
-                android:textColor="@color/encre"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+        <TextView
+            android:id="@+id/temp3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif-light"
+            android:text="--"
+            android:textColor="@color/encre"
+            android:textSize="22sp" />
 
-            <TextView
-                android:id="@+id/detail3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text=""
-                android:textColor="@color/attenue"
-                android:textSize="11sp" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/nom3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.06"
+            android:maxLines="1"
+            android:text="Cuve 3"
+            android:textAllCaps="true"
+            android:textColor="@color/attenue"
+            android:textSize="11sp" />
     </LinearLayout>
 </LinearLayout>
