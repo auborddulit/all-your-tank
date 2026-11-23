@@ -103,6 +103,9 @@ unsigned long sondeMuetteDepuis[3] = { 0, 0, 0 };
 
 bool enLigne = false;             // connecté à Adafruit IO ?
 int etatAio = -1;                 // dernier état renvoyé par io.status() (-1 = pas encore essayé)
+// Test du chemin vers Adafruit IO, refait une fois par minute hors ligne :
+char testDns = '?';               // '6' / '4' = adresse IPv6 / IPv4 trouvée, '-' = échec
+char testTcp = '?';               // '+' = le port MQTT d'Adafruit IO répond, '-' = non
 bool otaDemarre = false;          // mises à jour par le WiFi prêtes ? (il faut le WiFi)
 
 unsigned long lastCloud = 0;      // heure du dernier envoi des températures
@@ -185,10 +188,39 @@ void texteEtatReseau(char *texte, size_t taille) {
 #else
   snprintf(texte, taille, "W%c 4%c", wifi ? '+' : '-', v4 ? '+' : '-');
 #endif
-  if (etatAio >= 0) {
-    size_t l = strlen(texte);
-    snprintf(texte + l, taille - l, " A%d", etatAio);
+}
+
+// Deuxième ligne de diagnostic : le chemin jusqu'à Adafruit IO.
+//   A = code d'état d'Adafruit IO   D = recherche du nom io.adafruit.com (6/4/-)
+//   T = le port d'Adafruit IO répond-il (+/-) ?
+// Exemple : « A2 D6 T- » = nom trouvé en IPv6, mais le serveur ne répond pas.
+void texteEtatAdafruit(char *texte, size_t taille) {
+  snprintf(texte, taille, "A%d D%c T%c", etatAio, testDns, testTcp);
+}
+
+// Teste le chemin vers Adafruit IO, sans s'y connecter : le nom, puis le port.
+// Bloque quelques secondes au plus : n'est appelé qu'hors ligne, 1 fois par minute.
+void testerCheminAdafruit() {
+  static unsigned long dernier = 0;
+  if (dernier != 0 && millis() - dernier < 60000) return;
+  dernier = millis();
+  IPAddress ip;
+  if (WiFi.hostByName("io.adafruit.com", ip) != 1) {
+    testDns = '-';
+    testTcp = '?';
+  } else {
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+    testDns = ip.type() == IPv6 ? '6' : '4';
+    NetworkClient c;
+#else
+    testDns = '4';   // paquet de cartes version 2 : IPv4 seulement
+    WiFiClient c;
+#endif
+    testTcp = c.connect(ip, 8883, 5000) ? '+' : '-';
+    c.stop();
   }
+  Serial.printf("[reseau] io.adafruit.com = %s  port 8883 %s\n", ip.toString().c_str(),
+                testTcp == '+' ? "OK" : "injoignable");
 }
 
 // Écrit l'état du réseau dans le moniteur série (115200 bauds), toutes les
@@ -197,9 +229,10 @@ void journalReseau() {
   static unsigned long dernier = 0;
   if (millis() - dernier < 5000) return;
   dernier = millis();
-  char etat[24];
+  char etat[24], aio[24];
   texteEtatReseau(etat, sizeof(etat));
-  Serial.printf("[reseau] %s  IPv4 %s", etat, WiFi.localIP().toString().c_str());
+  texteEtatAdafruit(aio, sizeof(aio));
+  Serial.printf("[reseau] %s %s  IPv4 %s", etat, aio, WiFi.localIP().toString().c_str());
 #if RESEAU_IPV6_SEUL
   Serial.printf("  IPv6 locale %s  IPv6 globale %s  DNS %s",
                 WiFi.linkLocalIPv6().toString().c_str(),
@@ -379,8 +412,12 @@ void gererConnexion(unsigned long now) {
 
   bool etaitEnLigne = enLigne;
   if (!enLigne) journalReseau();
-  if (reseauPret()) etatAio = io.status();   // retente Adafruit IO au plus 1 fois/min
-  else if (etatAio >= AIO_CONNECTED) etatAio = -1;
+  if (reseauPret()) {
+    etatAio = io.status();   // retente Adafruit IO au plus 1 fois/min
+    if (etatAio < AIO_CONNECTED) testerCheminAdafruit();
+  } else if (etatAio >= AIO_CONNECTED) {
+    etatAio = -1;
+  }
   enLigne = reseauPret() && etatAio >= AIO_CONNECTED;
   if (enLigne) io.run();                       // garde la connexion Adafruit IO en vie
   if (enLigne && !etaitEnLigne) demanderReglages();   // de retour : relire les réglages
@@ -579,9 +616,12 @@ void loop() {
     }
     if (!enLigne) {
       u8g2.setFont(u8g2_font_4x6_tf);
-      // « HORS LIGNE » en alternance avec l'état du réseau (voir texteEtatReseau)
+      // « HORS LIGNE » en alternance avec l'état du réseau et du chemin vers
+      // Adafruit IO (voir texteEtatReseau et texteEtatAdafruit)
       char bas[24] = "HORS LIGNE";
-      if ((now / 2000) % 2 == 1) texteEtatReseau(bas, sizeof(bas));
+      int phase = (now / 2000) % 3;
+      if (phase == 1) texteEtatReseau(bas, sizeof(bas));
+      if (phase == 2) texteEtatAdafruit(bas, sizeof(bas));
       u8g2.drawStr((64 - u8g2.getStrWidth(bas)) / 2, 127, bas);
     }
   } while (u8g2.nextPage());

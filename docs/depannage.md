@@ -78,8 +78,8 @@ dans `config.h`). Le message en bas de l'écran de démarrage dit où ça bloque
 d'utilisateur, clé) ; **« IPV6... »** = le boîtier attend son adresse IPv6 (option
 `RESEAU_IPV6_SEUL`).
 
-En bas de l'écran, « HORS LIGNE » alterne avec un code d'état du réseau, par exemple
-`W+ 4+ L+ G+ A2` (+ = oui, - = non) :
+En bas de l'écran, « HORS LIGNE » alterne avec deux codes d'état, par exemple
+`W+ 4+ L+ G+` puis `A2 D6 T-` (+ = oui, - = non) :
 
 | Code | Signification |
 |---|---|
@@ -87,6 +87,8 @@ En bas de l'écran, « HORS LIGNE » alterne avec un code d'état du réseau, pa
 | `4` | adresse IPv4 reçue du routeur |
 | `L`, `G` | adresse IPv6 locale et globale (option `RESEAU_IPV6_SEUL` seulement) |
 | `A` suivi d'un nombre | réponse d'Adafruit IO : `2` = pas de réponse (internet, pare-feu), `11` ou `13` = connexion refusée (nom d'utilisateur ou clé dans `secrets.h`), `21` = connecté |
+| `D` | recherche du nom `io.adafruit.com` : `6` ou `4` = adresse trouvée (IPv6 / IPv4), `-` = échec (DNS) |
+| `T` | le port d'Adafruit IO (8883) répond-il ? `+` = oui, `-` = non (blocage sur le chemin) |
 
 Box 4G récente chez Bouygues ou Orange : un PC Linux a internet sur ce WiFi, mais pas
 un téléphone Android ? La box ne donne sans doute que de l'IPv6 : voir
