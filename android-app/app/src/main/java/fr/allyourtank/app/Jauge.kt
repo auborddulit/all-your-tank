@@ -86,9 +86,9 @@ object Jauge {
                 degre >= e.cible - e.fourchette - 1e-6 && degre <= e.cible + e.fourchette + 1e-6
             val long = v % 5 == 0
             val a = Math.PI * (1 - v / MAX)
-            val r1 = r - (if (long) 7f else 4f) * s
-            trait.color = if (dansFourchette) p.bande else p.piste
-            trait.strokeWidth = (if (dansFourchette) 1.4f else 1f) * s
+            val r1 = r - (if (long) 9f else 5f) * s
+            trait.color = if (dansFourchette) p.bande else p.graduation
+            trait.strokeWidth = (if (dansFourchette) 2.6f else 1.8f) * s
             canvas.drawLine(
                 cx + r1 * cos(a).toFloat(), cy - r1 * sin(a).toFloat(),
                 cx + r * cos(a).toFloat(), cy - r * sin(a).toFloat(),
@@ -109,7 +109,7 @@ object Jauge {
                 strokeWidth = 1.4f * s
                 strokeCap = Paint.Cap.ROUND
             }
-            canvas.drawLine(cx, cy, cx + 28f * s * cos(a).toFloat(), cy - 28f * s * sin(a).toFloat(), aiguille)
+            canvas.drawLine(cx, cy, cx + 26f * s * cos(a).toFloat(), cy - 26f * s * sin(a).toFloat(), aiguille)
             aiguille.style = Paint.Style.FILL
             canvas.drawCircle(cx, cy, 2.2f * s, aiguille)
         }
@@ -117,9 +117,17 @@ object Jauge {
 
     /** Image du cadran à graduations, pour le widget. */
     fun image(largeurPx: Int, e: EtatCuve, p: Palette): Bitmap {
-        val b = Bitmap.createBitmap(largeurPx, hauteurGraduations(largeurPx.toFloat()).toInt(), Bitmap.Config.ARGB_8888)
-        dessinerGraduations(Canvas(b), largeurPx.toFloat(), e, p)
+        val l = largeurPx.coerceAtLeast(16)
+        val b = Bitmap.createBitmap(l, hauteurGraduations(l.toFloat()).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+        dessinerGraduations(Canvas(b), l.toFloat(), e, p)
         return b
+    }
+
+    /** Même image, compressée en PNG : quelques ko, pour ne pas alourdir le widget. */
+    fun png(largeurPx: Int, e: EtatCuve, p: Palette): ByteArray {
+        val flux = java.io.ByteArrayOutputStream()
+        image(largeurPx, e, p).compress(Bitmap.CompressFormat.PNG, 100, flux)
+        return flux.toByteArray()
     }
 
     private fun angle(v: Double): Float = (v / MAX * 180.0).toFloat()

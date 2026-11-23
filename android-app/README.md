@@ -11,6 +11,11 @@ depuis plus de 10 minutes. Il se met à jour tout seul environ toutes les 15 min
 minimum qu'Android autorise) ; touchez une cuve pour ouvrir l'appli dessus, ce qui
 relit aussi les températures et met le widget à jour.
 
+Le widget remplit la place qu'on lui donne (appui long sur le widget, puis tirer les
+poignées) : cadrans et chiffres grandissent avec lui. Très large et bas, les trois
+cadrans se répartissent sur toute la largeur ; plus haut que large, les cuves
+s'empilent, une par ligne.
+
 **L'appli** : un onglet par cuve, le grand cadran, la cible et la fourchette réglables
 avec − / +, et des **préréglages** (« Garde à froid : 2 °C ±1 »…) qui appliquent cible
 et fourchette d'un seul geste. Les réglages partent sur Adafruit IO, et le boîtier les
@@ -80,7 +85,7 @@ dernier appui avant d'envoyer, pour ne pas multiplier les envois.
 | `TankWidgetProvider.kt` | Le widget (événements d'Android, appuis) |
 | `Rafraichissement.kt` | Lecture régulière en tâche de fond (WorkManager) |
 | `AdafruitIO.kt` | Lecture et envoi vers Adafruit IO, mémoire des dernières valeurs |
-| `Dessin.kt` | Dessin du widget |
+| `Dessin.kt` | Dessin du widget, adapté à sa taille (3 dispositions) |
 | `res/values/colors.xml`, `res/values-night/colors.xml` | Palette « Ambre », clair et sombre |
 
 Fabrication : `.github/workflows/appli-android.yml`. Pour fabriquer à la main avec

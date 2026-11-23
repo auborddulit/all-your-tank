@@ -21,6 +21,11 @@ class TankWidgetProvider : AppWidgetProvider() {
         RafraichirWorker.programmer(ctx)
     }
 
+    override fun onAppWidgetOptionsChanged(ctx: Context, manager: AppWidgetManager, id: Int, options: android.os.Bundle) {
+        // Le widget a été redimensionné : on le redessine à sa nouvelle taille
+        Dessin.mettreAJourTous(ctx)
+    }
+
     override fun onDisabled(ctx: Context) {
         // Dernier widget retiré : plus besoin de lire Adafruit IO
         RafraichirWorker.arreter(ctx)
