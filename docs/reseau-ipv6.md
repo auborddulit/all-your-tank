@@ -29,8 +29,12 @@ Avec `RESEAU_IPV6_SEUL true`, l'ESP32 :
 1. demande une adresse IPv6 en plus de l'IPv4 du WiFi ;
 2. attend de l'avoir avant de contacter Adafruit IO (l'écran affiche « IPV6... ») ;
 3. utilise le DNS64 public de Google (`2001:4860:4860::6464`), puis celui du
-   routeur en secours ; le DNS64 donne pour
+   routeur en secours. Le routeur distribue en général des DNS en IPv4, injoignables
+   sur un réseau IPv6 seul : le boîtier les remplace directement dans sa pile réseau,
+   et vérifie à chaque tour qu'ils n'ont pas été écrasés. Le DNS64 donne pour
    `io.adafruit.com` une adresse `64:ff9b:…` que l'opérateur relie à l'IPv4.
+
+Testé avec un TP-Link Archer MR200 v2 et une carte SIM Bouygues Telecom.
 
 Les mises à jour par le WiFi (OTA) continuent de passer par l'IPv4 du réseau local.
 
@@ -69,6 +73,11 @@ pour voir ce qui se passe. Si le téléversement échoue, appuyez deux fois rapi
 le bouton du Nano ESP32 (la LED verte pulse) et réessayez.
 
 Ensuite, les mises à jour par le WiFi (OTA) fonctionnent comme avant.
+
+## En cas de souci
+
+Hors ligne, le bas de l'écran affiche des codes d'état (`W+ 4+ L+ G+`, `A2 D6 T+`,
+`U+ 2001:4860:4`) : voir [depannage.md](depannage.md#lécran-affiche--hors-ligne-).
 
 ## Et le téléphone ?
 
