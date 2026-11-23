@@ -1,14 +1,14 @@
-# Fabrique l'appli Android du widget et la publie dans les « Releases » du dépôt.
-# Se lance à chaque modification du dossier android-widget/, ou à la main
-# (onglet Actions > Widget Android > Run workflow).
-name: Widget Android
+# Fabrique l'appli Android et la publie dans les « Releases » du dépôt.
+# Se lance à chaque modification du dossier android-app/, ou à la main
+# (onglet Actions > Appli Android > Run workflow).
+name: Appli Android
 
 on:
   push:
     branches: [main]
     paths:
-      - "android-widget/**"
-      - ".github/workflows/widget-android.yml"
+      - "android-app/**"
+      - ".github/workflows/appli-android.yml"
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: android-widget
+        working-directory: android-app
 
     steps:
       - name: Récupérer le code
@@ -40,22 +40,22 @@ jobs:
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Renommer le fichier
-        run: cp app/build/outputs/apk/release/app-release.apk all-your-tank-widget.apk
+        run: cp app/build/outputs/apk/release/app-release.apk all-your-tank.apk
 
       - name: Garder l'appli avec cette fabrication
         uses: actions/upload-artifact@v4
         with:
-          name: all-your-tank-widget
-          path: android-widget/all-your-tank-widget.apk
+          name: all-your-tank
+          path: android-app/all-your-tank.apk
 
       - name: Publier dans une Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: widget-v${{ github.run_number }}
-          name: Widget Android ${{ github.run_number }}
+          tag_name: appli-v${{ github.run_number }}
+          name: Appli Android ${{ github.run_number }}
           make_latest: true
-          files: android-widget/all-your-tank-widget.apk
+          files: android-app/all-your-tank.apk
           body: |
-            Appli Android du widget All your tank.
-            Sur le téléphone, touchez **all-your-tank-widget.apk** ci-dessous pour la télécharger puis l'installer.
-            Mode d'emploi : android-widget/README.md
+            Appli Android All your tank (avec son widget).
+            Sur le téléphone, touchez **all-your-tank.apk** ci-dessous pour la télécharger puis l'installer.
+            Mode d'emploi : android-app/README.md

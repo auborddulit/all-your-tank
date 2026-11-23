@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "all-your-tank-widget"
+rootProject.name = "all-your-tank-app"
 include(":app")

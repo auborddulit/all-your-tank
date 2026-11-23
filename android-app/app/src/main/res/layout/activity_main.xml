@@ -97,7 +97,7 @@
         </LinearLayout>
 
         <!-- Cadran et température -->
-        <fr.allyourtank.widget.JaugeView
+        <fr.allyourtank.app.JaugeView
             android:id="@+id/jauge"
             android:layout_width="280dp"
             android:layout_height="wrap_content"

@@ -1,4 +1,4 @@
-package fr.allyourtank.widget
+package fr.allyourtank.app
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -35,6 +35,6 @@ class TankWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        const val ACTION_RAFRAICHIR = "fr.allyourtank.widget.RAFRAICHIR"
+        const val ACTION_RAFRAICHIR = "fr.allyourtank.app.RAFRAICHIR"
     }
 }

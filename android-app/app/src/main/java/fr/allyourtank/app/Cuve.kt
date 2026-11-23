@@ -1,4 +1,4 @@
-package fr.allyourtank.widget
+package fr.allyourtank.app
 
 import java.time.Duration
 import java.time.Instant

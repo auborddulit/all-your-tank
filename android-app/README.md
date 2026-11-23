@@ -1,4 +1,4 @@
-# Appli et widget Android
+# Appli Android
 
 Une petite appli Android pour suivre et régler les 3 cuves depuis le téléphone,
 avec un widget pour l'écran d'accueil. Elle passe toute seule en mode clair
@@ -23,7 +23,7 @@ modification de ce dossier.
 1. Sur le téléphone, ouvrez la page **Releases** du dépôt GitHub (colonne de droite de la
    page d'accueil du dépôt, ou adresse `…/all-your-tank/releases/latest`). Le dépôt étant
    privé, il faut être connecté à votre compte GitHub.
-2. Touchez **all-your-tank-widget.apk** pour le télécharger.
+2. Touchez **all-your-tank.apk** pour le télécharger.
 3. Ouvrez le fichier téléchargé. Android demande d'autoriser l'installation
    d'applications depuis votre navigateur (« sources inconnues ») : acceptez, puis
    **Installer**.
@@ -82,9 +82,9 @@ dernier appui avant d'envoyer, pour ne pas multiplier les envois.
 | `Dessin.kt` | Dessin du widget |
 | `res/values/colors.xml`, `res/values-night/colors.xml` | Palette « Ambre », clair et sombre |
 
-Fabrication : `.github/workflows/widget-android.yml`. Pour fabriquer à la main avec
-Android Studio, ouvrez le dossier `android-widget/`.
+Fabrication : `.github/workflows/appli-android.yml`. Pour fabriquer à la main avec
+Android Studio, ouvrez le dossier `android-app/`.
 
-La clé de signature `app/widget.keystore` est volontairement publiée avec le code : elle
+La clé de signature `app/appli.keystore` est volontairement publiée avec le code : elle
 permet seulement d'installer les nouvelles versions par-dessus les anciennes. Si vous
 publiez votre propre version de l'appli, générez votre propre clé.

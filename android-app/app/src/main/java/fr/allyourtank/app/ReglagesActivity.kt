@@ -1,4 +1,4 @@
-package fr.allyourtank.widget
+package fr.allyourtank.app
 
 import android.app.Activity
 import android.os.Bundle

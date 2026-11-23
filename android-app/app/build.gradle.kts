@@ -8,11 +8,11 @@ plugins {
 val numeroVersion = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
 
 android {
-    namespace = "fr.allyourtank.widget"
+    namespace = "fr.allyourtank.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "fr.allyourtank.widget"
+        applicationId = "fr.allyourtank.app"
         minSdk = 26          // Android 8.0 et plus récent
         targetSdk = 34
         versionCode = numeroVersion
@@ -24,9 +24,9 @@ android {
     // Ce n'est pas un secret : l'appli n'est pas sur le Play Store.
     signingConfigs {
         create("partage") {
-            storeFile = file("widget.keystore")
+            storeFile = file("appli.keystore")
             storePassword = "allyourtank"
-            keyAlias = "widget"
+            keyAlias = "appli"
             keyPassword = "allyourtank"
         }
     }
