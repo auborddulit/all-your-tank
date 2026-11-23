@@ -168,14 +168,31 @@ void cbF2(AdafruitIO_Data *d) { majFourchette(2, d); }
 const char *DNS64[2] = { "2001:4860:4860::6464", "2001:4860:4860::64" };
 #endif
 
-// Affiche l'état du réseau dans le moniteur série (115200 bauds), toutes les
-// 5 secondes au plus : utile pour comprendre un blocage sur « IPV6... ».
+// État du réseau en abrégé, affiché en bas de l'écran (en alternance avec
+// « HORS LIGNE ») et dans le moniteur série. + = oui, - = non :
+//   W = connecté au WiFi        4 = adresse IPv4 reçue
+//   L = adresse IPv6 locale     G = adresse IPv6 globale (celle qui sort sur internet)
+// Exemple : « W+ 4+ L+ G- » = WiFi et IPv4 OK, mais pas encore d'adresse IPv6 globale.
+void texteEtatReseau(char *texte, size_t taille) {
+  bool wifi = WiFi.status() == WL_CONNECTED;
+  bool v4 = wifi && WiFi.localIP() != IPAddress((uint32_t)0);
+#if RESEAU_IPV6_SEUL
+  snprintf(texte, taille, "W%c 4%c L%c G%c", wifi ? '+' : '-', v4 ? '+' : '-',
+           WiFi.STA.hasLinkLocalIPv6() ? '+' : '-', WiFi.STA.hasGlobalIPv6() ? '+' : '-');
+#else
+  snprintf(texte, taille, "W%c 4%c", wifi ? '+' : '-', v4 ? '+' : '-');
+#endif
+}
+
+// Écrit l'état du réseau dans le moniteur série (115200 bauds), toutes les
+// 5 secondes au plus : utile pour comprendre un blocage.
 void journalReseau() {
   static unsigned long dernier = 0;
   if (millis() - dernier < 5000) return;
   dernier = millis();
-  Serial.printf("[reseau] WiFi %s  IPv4 %s", WiFi.status() == WL_CONNECTED ? "OK" : "--",
-                WiFi.localIP().toString().c_str());
+  char etat[24];
+  texteEtatReseau(etat, sizeof(etat));
+  Serial.printf("[reseau] %s  IPv4 %s", etat, WiFi.localIP().toString().c_str());
 #if RESEAU_IPV6_SEUL
   Serial.printf("  IPv6 locale %s  IPv6 globale %s  DNS %s",
                 WiFi.linkLocalIPv6().toString().c_str(),
@@ -336,6 +353,21 @@ void gererConnexion(unsigned long now) {
     dernierEssaiWifi = now;
     WiFi.reconnect();
   }
+#if RESEAU_IPV6_SEUL
+  // WiFi là mais toujours pas d'adresse IPv6 globale au bout d'une minute :
+  // se reconnecter, ce qui redemande au routeur son annonce IPv6
+  static unsigned long sansIPv6Depuis = 0;
+  if (wifiOk && !WiFi.STA.hasGlobalIPv6()) {
+    if (sansIPv6Depuis == 0) sansIPv6Depuis = now ? now : 1;
+    if (now - sansIPv6Depuis >= 60000) {
+      Serial.println("[reseau] pas d'IPv6 globale depuis 1 min : reconnexion au WiFi");
+      sansIPv6Depuis = 0;
+      WiFi.reconnect();
+    }
+  } else {
+    sansIPv6Depuis = 0;
+  }
+#endif
 
   bool etaitEnLigne = enLigne;
   if (!enLigne) journalReseau();
@@ -537,7 +569,10 @@ void loop() {
     }
     if (!enLigne) {
       u8g2.setFont(u8g2_font_4x6_tf);
-      u8g2.drawStr((64 - u8g2.getStrWidth("HORS LIGNE")) / 2, 127, "HORS LIGNE");
+      // « HORS LIGNE » en alternance avec l'état du réseau (voir texteEtatReseau)
+      char bas[24] = "HORS LIGNE";
+      if ((now / 2000) % 2 == 1) texteEtatReseau(bas, sizeof(bas));
+      u8g2.drawStr((64 - u8g2.getStrWidth(bas)) / 2, 127, bas);
     }
   } while (u8g2.nextPage());
 }
