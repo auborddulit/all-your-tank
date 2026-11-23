@@ -49,11 +49,12 @@ moins cher et se branche avec 4 fils.
 La notice d'Arduino indique que la borne **VIN** du Nano ESP32 accepte **de 6 à 21 V**.
 L'alimentation APV-8-5 fournit 5 V :
 
-- **branchée sur VIN**, elle est en dessous de la plage prévue. Ça peut fonctionner,
-  mais la carte risque de redémarrer lors des pics de consommation du WiFi ;
-- **branchée sur la borne 5 V (VBUS)**, c'est une pratique courante, mais elle n'est
-  pas décrite par la notice officielle. Dans ce cas, ne branchez jamais le câble USB
-  en même temps, pour ne pas renvoyer du courant vers l'ordinateur.
+- sur le montage d'origine, elle est **branchée sur la borne 5V (VBUS)**. C'est une
+  pratique courante et ça fonctionne, mais ce n'est pas décrit par la notice officielle.
+  **Ne branchez jamais le câble USB pendant que le boîtier est sur le secteur** :
+  débranchez le 230 V avant de reprogrammer, pour ne pas renvoyer du courant vers
+  l'ordinateur ;
+- branchée sur **VIN**, elle serait en dessous de la plage prévue (6 à 21 V).
 
 **Solution la plus propre** : une alimentation **12 V** de la même famille
 (MEAN WELL APV-8-12, même taille) branchée sur **VIN**.

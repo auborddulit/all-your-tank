@@ -53,7 +53,7 @@
     <text x="460" y="335">D2</text>
   </g>
   <g font-size="14" font-weight="700" fill="#ffffff">
-    <text x="340" y="385">5 V*</text>
+    <text x="340" y="385">5V</text>
     <text x="340" y="430">GND</text>
   </g>
   <g fill="#e9eef5" stroke="#0d3a6b" stroke-width="2">
@@ -112,6 +112,6 @@
   <!-- ============ Titre, légende, note ============ -->
   <text x="30" y="44" font-size="24" font-weight="700" fill="#1d1d1f">Câblage</text>
   <text x="30" y="68" font-size="14" fill="#555">Couleurs : rouge = 3,3 V · noir = masse · jaune = données · marron = horloge I2C</text>
-  <text x="30" y="590" font-size="12" fill="#555">* Borne 5 V de l'alimentation :</text>
-  <text x="30" y="606" font-size="12" fill="#555">voir la note dans docs/materiel.md</text>
+  <text x="30" y="590" font-size="12" fill="#b3261e" font-weight="700">Ne jamais brancher l'USB et le 230 V en même temps</text>
+  <text x="30" y="606" font-size="12" fill="#555">Borne 5V (VBUS) : voir docs/materiel.md</text>
 </svg>

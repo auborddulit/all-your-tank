@@ -36,12 +36,15 @@ sans elle, aucune sonde n'est détectée. Une seule suffit pour les 3 sondes.
 
 | Alimentation MEAN WELL | Destination |
 |---|---|
-| +V (rouge) | borne 5 V du Nano : voir le [point de vigilance](materiel.md#point-de-vigilance--lalimentation-5-v) |
+| +V (rouge) | borne **5V** du Nano (VBUS) : voir le [point de vigilance](materiel.md#point-de-vigilance--lalimentation-5-v) |
 | −V (noir) | GND |
 | AC/L (marron) | phase du câble secteur |
 | AC/N (bleu) | neutre du câble secteur |
 
 ⚡ **Le 230 V doit être raccordé par une personne qualifiée.**
+
+⚠️ **Avant de brancher le câble USB pour reprogrammer la carte, débranchez le boîtier du secteur.**
+L'alimentation et l'USB arrivent tous les deux sur la même ligne 5 V de la carte.
 
 ## Conseils de montage
 
