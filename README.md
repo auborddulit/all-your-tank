@@ -21,7 +21,7 @@
 
 - **Mesure** la température de 3 cuves avec des sondes inox étanches, glissées dans les doigts de gant.
 - **Affiche** sur place les 3 températures, le nom de chaque cuve et sa cible (par exemple `18.5±1`), sur un petit écran OLED vertical.
-- **Alerte** à l'écran (bandeau « ALERTE » clignotant) et par email quand une cuve sort de sa fourchette, trop chaude ou trop froide, ou quand une sonde ne répond plus. L'email dit en clair ce qui se passe (« CHAUD 1, SONDE 3 »).
+- **Alerte** à l'écran (bandeau « ALERTE » clignotant) et par email quand une cuve sort de sa fourchette, trop chaude ou trop froide, ou quand une sonde ne répond plus. L'email dit en clair ce qui se passe (« CHAUD 1 : 21.3 C (19±1), SONDE 3 »).
 - **Envoie** les températures en ligne toutes les 20 secondes : graphiques sur téléphone et alertes par email via [Adafruit IO](https://io.adafruit.com) (gratuit).
 - **Se règle à distance** : la température cible et la fourchette de chaque cuve se changent avec des curseurs, selon la levure et l'étape de fermentation. L'ESP32 s'en souvient après une coupure de courant.
 - **Se met à jour par le WiFi** (OTA) : pas besoin d'ouvrir le boîtier pour changer le programme.

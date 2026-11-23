@@ -17,7 +17,7 @@
 //       trop chaude ou trop froide ;
 //    5. envoie les températures à Adafruit IO toutes les 20 secondes,
 //       et l'état d'alerte quand il change (pour les emails) : « OK »,
-//       « CHAUD 1 », « FROID 2 », « SONDE 3 » (sonde muette)… ;
+//       « CHAUD 1 : 21.3 C (19±1) », « SONDE 3 » (sonde muette)… ;
 //    6. accepte les mises à jour du programme par le WiFi (OTA) ;
 //    7. sans internet, continue d'afficher les températures (« HORS LIGNE »)
 //       et retente la connexion en arrière-plan.
@@ -296,10 +296,14 @@ void lireSondes(unsigned long now) {
   }
 }
 
-// Écrit l'état d'alerte en clair pour le feed « alerte » (et donc l'email) :
-// « OK », ou par exemple « CHAUD 1, SONDE 3 ».
-void texteAlerte(char *texte, size_t taille, unsigned long now) {
-  texte[0] = '\0';
+// Écrit l'état d'alerte en clair, en deux versions :
+//  - « etat », court, pour savoir si quelque chose a changé : « CHAUD 1, SONDE 3 » ;
+//  - « detail », envoyé dans le feed « alerte » (et donc dans l'email), avec la
+//    température et la consigne : « CHAUD 1 : 21.3 C (19±1), SONDE 3 ».
+//  Les deux valent « OK » quand tout va bien.
+void texteAlerte(char *etat, size_t tailleEtat, char *detail, size_t tailleDetail, unsigned long now) {
+  etat[0] = '\0';
+  detail[0] = '\0';
   for (int i = 0; i < 3; i++) {
     const char *quoi = nullptr;
     if (enAlerte[i]) {
@@ -308,10 +312,25 @@ void texteAlerte(char *texte, size_t taille, unsigned long now) {
       quoi = "SONDE";
     }
     if (quoi == nullptr) continue;
-    size_t l = strlen(texte);
-    snprintf(texte + l, taille - l, "%s%s %d", l > 0 ? ", " : "", quoi, i + 1);
+
+    size_t l = strlen(etat);
+    snprintf(etat + l, tailleEtat - l, "%s%s %d", l > 0 ? ", " : "", quoi, i + 1);
+
+    l = strlen(detail);
+    if (enAlerte[i]) {
+      char cBuf[8], fBuf[8];
+      formatNombre(cBuf, sizeof(cBuf), cible[i]);
+      formatNombre(fBuf, sizeof(fBuf), fourchette[i]);
+      snprintf(detail + l, tailleDetail - l, "%s%s %d : %.1f C (%s±%s)",
+               l > 0 ? ", " : "", quoi, i + 1, temp[i], cBuf, fBuf);
+    } else {
+      snprintf(detail + l, tailleDetail - l, "%s%s %d", l > 0 ? ", " : "", quoi, i + 1);
+    }
   }
-  if (texte[0] == '\0') snprintf(texte, taille, "OK");
+  if (etat[0] == '\0') {
+    snprintf(etat, tailleEtat, "OK");
+    snprintf(detail, tailleDetail, "OK");
+  }
 }
 
 // Met à jour l'état d'alerte d'une cuve, avec une marge anti-clignotement :
@@ -396,8 +415,8 @@ void loop() {
   }
 
   bool alerteGlob = enAlerte[0] || enAlerte[1] || enAlerte[2];
-  char alerte[48];
-  texteAlerte(alerte, sizeof(alerte), now);
+  char alerte[48], alerteDetail[128];
+  texteAlerte(alerte, sizeof(alerte), alerteDetail, sizeof(alerteDetail), now);
 
   if (enLigne) {
     // 3. Envoyer les températures à Adafruit IO (voir INTERVALLE_ENVOI_MS)
@@ -408,12 +427,14 @@ void loop() {
       }
     }
 
-    // 4. Envoyer l'état d'alerte s'il a changé (au plus toutes les 30 s).
+    // 4. Envoyer l'état d'alerte s'il a changé (au plus toutes les 30 s), avec
+    //    les températures du moment. On ne compare que l'état (« CHAUD 1 ») :
+    //    une température qui bouge ne renvoie pas d'email.
     //    Hors ligne, il partira au retour de la connexion.
     if (alerteEnvoyee != alerte && now - lastAlerte >= INTERVALLE_ALERTE_MS) {
       lastAlerte = now;
       alerteEnvoyee = alerte;
-      feedAlerte->save(alerte);
+      feedAlerte->save(alerteDetail);
     }
   }
 

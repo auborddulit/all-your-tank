@@ -27,7 +27,7 @@ gratuit. Leurs noms doivent être écrits **exactement** comme ici :
 | `cuve1`, `cuve2`, `cuve3` | ESP32 → Adafruit IO | Température mesurée (°C) |
 | `cible-cuve1`, `cible-cuve2`, `cible-cuve3` | Adafruit IO → ESP32 | Température cible (°C) |
 | `fourchette-cuve1`, `fourchette-cuve2`, `fourchette-cuve3` | Adafruit IO → ESP32 | Écart toléré de part et d'autre de la cible (°C) |
-| `alerte` | ESP32 → Adafruit IO | État en clair : `OK`, `CHAUD 1`, `FROID 2`, `SONDE 3`, ou plusieurs séparés par des virgules |
+| `alerte` | ESP32 → Adafruit IO | État en clair : `OK`, `CHAUD 1 : 21.3 C (19±1)`, `SONDE 3`…, plusieurs séparés par des virgules |
 
 - `cuve1` à `cuve3` et `alerte` se créent tout seuls à la première valeur envoyée
   par le boîtier.
@@ -68,10 +68,14 @@ surveille les sondes. Il écrit l'état en clair dans le feed `alerte` :
 | Valeur | Signification |
 |---|---|
 | `OK` | tout va bien |
-| `CHAUD 1` | cuve 1 au-dessus de sa fourchette |
-| `FROID 2` | cuve 2 en dessous de sa fourchette |
+| `CHAUD 1 : 21.3 C (19±1)` | cuve 1 au-dessus de sa fourchette : sa température et sa consigne |
+| `FROID 2 : 10.6 C (12±1)` | cuve 2 en dessous de sa fourchette |
 | `SONDE 3` | la sonde de la cuve 3 ne répond plus depuis 2 minutes (`DELAI_SONDE_MUETTE_MS`) |
-| `CHAUD 1, SONDE 3` | plusieurs problèmes en même temps |
+| `CHAUD 1 : 21.3 C (19±1), SONDE 3` | plusieurs problèmes en même temps |
+
+La température est celle du moment où l'alerte part. Un nouvel email ne part que
+quand l'état change (une cuve de plus ou de moins en alerte), pas à chaque variation
+de température.
 
 Il suffit donc d'une seule règle : *si* `alerte` est **différent de** `OK`, *alors*
 **envoyer un email**.
