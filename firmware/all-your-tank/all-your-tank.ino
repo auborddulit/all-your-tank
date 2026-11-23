@@ -165,11 +165,12 @@ void cbF2(AdafruitIO_Data *d) { majFourchette(2, d); }
 //  - réseau IPv6 seul : il faut aussi notre adresse IPv6 (elle arrive quelques
 //    secondes après le WiFi), sinon le premier essai partirait en IPv4, échouerait,
 //    et la bibliothèque Adafruit IO attendrait une minute avant de réessayer.
-//    On impose aussi un serveur DNS « DNS64 » (celui de Google) : il donne une
-//    adresse IPv6 spéciale (64:ff9b:…) pour les sites restés en IPv4, comme
-//    io.adafruit.com, et l'opérateur fait le pont vers l'IPv4.
+//    On impose aussi les serveurs DNS : d'abord le « DNS64 » de Google, qui donne
+//    une adresse IPv6 spéciale (64:ff9b:…) pour les sites restés en IPv4, comme
+//    io.adafruit.com (l'opérateur fait le pont vers l'IPv4) ; en secours, celui
+//    du routeur, qui transmet en général au DNS64 de l'opérateur.
 #if RESEAU_IPV6_SEUL
-const char *DNS64[2] = { "2001:4860:4860::6464", "2001:4860:4860::64" };
+const char *DNS64_GOOGLE = "2001:4860:4860::6464";
 #endif
 
 // État du réseau en abrégé, affiché en bas de l'écran (en alternance avec
@@ -192,7 +193,8 @@ void texteEtatReseau(char *texte, size_t taille) {
 
 // Deuxième ligne de diagnostic : le chemin jusqu'à Adafruit IO.
 //   A = code d'état d'Adafruit IO   D = recherche du nom io.adafruit.com (6/4/-)
-//   T = le port d'Adafruit IO répond-il (+/-) ?
+//   T = le port d'Adafruit IO répond-il (+/-) ? (en IPv6 seul, testé même si
+//       le nom est introuvable, avec une adresse connue d'Adafruit IO)
 // Exemple : « A2 D6 T- » = nom trouvé en IPv6, mais le serveur ne répond pas.
 void texteEtatAdafruit(char *texte, size_t taille) {
   snprintf(texte, taille, "A%d D%c T%c", etatAio, testDns, testTcp);
@@ -207,13 +209,25 @@ void testerCheminAdafruit() {
   IPAddress ip;
   if (WiFi.hostByName("io.adafruit.com", ip) != 1) {
     testDns = '-';
+#if RESEAU_IPV6_SEUL
+    // Nom introuvable : on teste quand même la sortie IPv6 avec une adresse
+    // connue d'Adafruit IO (via le pont de l'opérateur), pour savoir si c'est
+    // seulement le DNS qui bloque
+    ip.fromString("64:ff9b::3404:fdb1");
+#else
     testTcp = '?';
+#endif
   } else {
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
     testDns = ip.type() == IPv6 ? '6' : '4';
-    NetworkClient c;
 #else
     testDns = '4';   // paquet de cartes version 2 : IPv4 seulement
+#endif
+  }
+  if (testDns != '-' || RESEAU_IPV6_SEUL) {
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+    NetworkClient c;
+#else
     WiFiClient c;
 #endif
     testTcp = c.connect(ip, 8883, 5000) ? '+' : '-';
@@ -246,10 +260,11 @@ bool reseauPret() {
   if (WiFi.status() != WL_CONNECTED) return false;
 #if RESEAU_IPV6_SEUL
   if (!WiFi.STA.hasGlobalIPv6()) return false;
+  IPAddress dns[2];
+  dns[0].fromString(DNS64_GOOGLE);
+  dns[1] = WiFi.gatewayIP();   // le routeur
   for (int i = 0; i < 2; i++) {
-    IPAddress dns;
-    dns.fromString(DNS64[i]);
-    if (WiFi.STA.dnsIP(i) != dns) WiFi.STA.dnsIP(i, dns);   // le WiFi peut l'écraser
+    if (WiFi.STA.dnsIP(i) != dns[i]) WiFi.STA.dnsIP(i, dns[i]);   // le WiFi peut les écraser
   }
 #endif
   return true;

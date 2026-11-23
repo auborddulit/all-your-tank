@@ -28,7 +28,8 @@ Avec `RESEAU_IPV6_SEUL true`, l'ESP32 :
 
 1. demande une adresse IPv6 en plus de l'IPv4 du WiFi ;
 2. attend de l'avoir avant de contacter Adafruit IO (l'écran affiche « IPV6... ») ;
-3. utilise le DNS64 public de Google (`2001:4860:4860::6464`), qui donne pour
+3. utilise le DNS64 public de Google (`2001:4860:4860::6464`), puis celui du
+   routeur en secours ; le DNS64 donne pour
    `io.adafruit.com` une adresse `64:ff9b:…` que l'opérateur relie à l'IPv4.
 
 Les mises à jour par le WiFi (OTA) continuent de passer par l'IPv4 du réseau local.
