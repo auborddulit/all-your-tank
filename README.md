@@ -132,3 +132,5 @@ Ce projet repose sur les bibliothèques
 [U8g2](https://github.com/olikraus/u8g2) et
 [Adafruit IO Arduino](https://github.com/adafruit/Adafruit_IO_Arduino).
 Merci à leurs auteurs.
+
+Merci à mon pote Denis, pour le montage hardware et les impressions 3d 
