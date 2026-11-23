@@ -106,6 +106,7 @@ int etatAio = -1;                 // dernier état renvoyé par io.status() (-1 
 // Test du chemin vers Adafruit IO, refait une fois par minute hors ligne :
 char testDns = '?';               // '6' / '4' = adresse IPv6 / IPv4 trouvée, '-' = échec
 char testTcp = '?';               // '+' = le port MQTT d'Adafruit IO répond, '-' = non
+char testUdp = '?';               // '+' = un serveur DNS répond à notre propre requête
 bool otaDemarre = false;          // mises à jour par le WiFi prêtes ? (il faut le WiFi)
 
 unsigned long lastCloud = 0;      // heure du dernier envoi des températures
@@ -200,6 +201,48 @@ void texteEtatAdafruit(char *texte, size_t taille) {
   snprintf(texte, taille, "A%d D%c T%c", etatAio, testDns, testTcp);
 }
 
+#if RESEAU_IPV6_SEUL
+// Troisième ligne (IPv6 seul) : « U+ 0:6 1:4 »
+//   U = notre propre requête DNS (sans passer par le système) au DNS64 de Google
+//   0:, 1: = type des serveurs DNS réglés dans le système (6 = IPv6, 4 = IPv4, - = aucun)
+void texteEtatDns(char *texte, size_t taille) {
+  char t[2];
+  for (int i = 0; i < 2; i++) {
+    IPAddress d = WiFi.STA.dnsIP(i);
+    t[i] = d.type() == IPv6 ? '6' : (d == IPAddress((uint32_t)0) ? '-' : '4');
+  }
+  snprintf(texte, taille, "U%c 0:%c 1:%c", testUdp, t[0], t[1]);
+}
+
+// Envoie nous-mêmes une requête DNS (type AAAA, io.adafruit.com) au DNS64 de
+// Google, en UDP, et regarde si une réponse revient dans les 3 secondes.
+char requeteDnsManuelle() {
+  static const uint8_t requete[] = {
+    0x12, 0x34, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    2, 'i', 'o', 8, 'a', 'd', 'a', 'f', 'r', 'u', 'i', 't', 3, 'c', 'o', 'm', 0,
+    0x00, 0x1c, 0x00, 0x01 };
+  IPAddress serveur;
+  serveur.fromString(DNS64_GOOGLE);
+  NetworkUDP udp;
+  if (!udp.begin(0)) return '?';
+  udp.beginPacket(serveur, 53);
+  udp.write(requete, sizeof(requete));
+  if (!udp.endPacket()) { udp.stop(); return '-'; }
+  unsigned long debut = millis();
+  char resultat = '-';
+  while (millis() - debut < 3000) {
+    if (udp.parsePacket() >= 12) {
+      uint8_t r[12];
+      udp.read(r, sizeof(r));
+      if (r[0] == 0x12 && r[1] == 0x34) { resultat = '+'; break; }
+    }
+    delay(20);
+  }
+  udp.stop();
+  return resultat;
+}
+#endif
+
 // Teste le chemin vers Adafruit IO, sans s'y connecter : le nom, puis le port.
 // Bloque quelques secondes au plus : n'est appelé qu'hors ligne, 1 fois par minute.
 void testerCheminAdafruit() {
@@ -233,6 +276,9 @@ void testerCheminAdafruit() {
     testTcp = c.connect(ip, 8883, 5000) ? '+' : '-';
     c.stop();
   }
+#if RESEAU_IPV6_SEUL
+  testUdp = requeteDnsManuelle();
+#endif
   Serial.printf("[reseau] io.adafruit.com = %s  port 8883 %s\n", ip.toString().c_str(),
                 testTcp == '+' ? "OK" : "injoignable");
 }
@@ -634,9 +680,12 @@ void loop() {
       // « HORS LIGNE » en alternance avec l'état du réseau et du chemin vers
       // Adafruit IO (voir texteEtatReseau et texteEtatAdafruit)
       char bas[24] = "HORS LIGNE";
-      int phase = (now / 2000) % 3;
+      int phase = (now / 2000) % (RESEAU_IPV6_SEUL ? 4 : 3);
       if (phase == 1) texteEtatReseau(bas, sizeof(bas));
       if (phase == 2) texteEtatAdafruit(bas, sizeof(bas));
+#if RESEAU_IPV6_SEUL
+      if (phase == 3) texteEtatDns(bas, sizeof(bas));
+#endif
       u8g2.drawStr((64 - u8g2.getStrWidth(bas)) / 2, 127, bas);
     }
   } while (u8g2.nextPage());
