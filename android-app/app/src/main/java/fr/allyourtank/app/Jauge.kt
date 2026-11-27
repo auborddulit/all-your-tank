@@ -11,15 +11,27 @@ import kotlin.math.sin
 
 /**
  * Les cadrans.
- *  - Appli : cadran gradué en demi-cercle (un trait par degré, plus long tous les
+ *  Les deux cadrans font un arc de 240° (ARC), ouvert vers le bas.
+ *  - Appli : cadran gradué (un trait par degré, plus long tous les
  *    5 °C, les nombres tous les 10 °C), la fourchette en ambre, une aiguille fine.
  *    L'échelle va de echelleMin à echelleMax (Réglages).
  *  - Widget : cadran à graduations fin, même échelle (plus bas dans ce fichier).
  */
 object Jauge {
+    /** Ouverture des cadrans, en degrés (180 = demi-cercle). */
+    private const val ARC = 240.0
+
+    /** Hauteur du petit cadran du widget, en proportion de sa largeur. */
+    const val RATIO_WIDGET = 0.76f
+
+    /** Angle (en radians) d'une température sur un cadran de mini à maxi °C. */
+    private fun angleDe(v: Double, mini: Double, maxi: Double): Double {
+        val f = ((v - mini) / (maxi - mini).coerceAtLeast(1.0)).coerceIn(0.0, 1.0)
+        return Math.toRadians(90 + ARC / 2 - f * ARC)
+    }
 
     /** Hauteur du grand cadran pour une largeur donnée. */
-    fun hauteur(largeur: Float): Float = largeur * 0.62f
+    fun hauteur(largeur: Float): Float = largeur * 0.82f
 
     fun dessiner(canvas: Canvas, largeur: Float, e: EtatCuve, p: Palette, mini: Double, maxi: Double) {
         // Géométrie pensée sur une largeur de 100, puis mise à l'échelle
@@ -28,7 +40,7 @@ object Jauge {
         val cy = 56f * s
         val r = 46f * s
         val etendue = (maxi - mini).coerceAtLeast(1.0)
-        fun angle(v: Double): Double = Math.PI * (1 - ((v - mini) / etendue).coerceIn(0.0, 1.0))
+        fun angle(v: Double): Double = angleDe(v, mini, maxi)
         fun x(a: Double, rayon: Float) = cx + rayon * cos(a).toFloat()
         fun y(a: Double, rayon: Float) = cy - rayon * sin(a).toFloat()
 
@@ -87,7 +99,7 @@ object Jauge {
     // ------------------------------------------------------------------ version fine du widget
 
     /** Hauteur du cadran à graduations pour une largeur donnée. */
-    fun hauteurGraduations(largeur: Float): Float = largeur * 0.58f
+    fun hauteurGraduations(largeur: Float): Float = largeur * RATIO_WIDGET
 
     /**
      * Cadran à graduations (widget) : un trait par degré, plus long tous les 5 °C,
@@ -98,8 +110,7 @@ object Jauge {
         val cx = 50f * s
         val cy = 52f * s
         val r = 40f * s
-        val etendue = (maxi - mini).coerceAtLeast(1.0)
-        fun angle(v: Double): Double = Math.PI * (1 - ((v - mini) / etendue).coerceIn(0.0, 1.0))
+        fun angle(v: Double): Double = angleDe(v, mini, maxi)
         val trait = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.BUTT }
 
         for (v in Math.ceil(mini).toInt()..Math.floor(maxi).toInt()) {

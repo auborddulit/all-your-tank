@@ -109,16 +109,16 @@ object Dessin {
 
         return when {
             empile -> {
-                val g = min((hauteur / 3f) / 0.62f, largeur * 0.5f).coerceAtLeast(30f)
+                val g = min((hauteur / 3f) / (Jauge.RATIO_WIDGET + 0.04f), largeur * 0.5f).coerceAtLeast(30f)
                 Mise(R.layout.widget_cuves_empile, g, max(13f, g * 0.34f), max(9f, g * 0.15f), margeV)
             }
             tresLarge -> {
                 val t = max(13f, hauteur * 0.2f)
-                val g = min(largeur / 3f - 10f, (hauteur - t * 1.2f) / 0.58f).coerceAtLeast(30f)
+                val g = min(largeur / 3f - 10f, (hauteur - t * 1.2f) / Jauge.RATIO_WIDGET).coerceAtLeast(30f)
                 Mise(R.layout.widget_cuves_large, g, t, max(9f, t * 0.6f), margeV)
             }
             else -> {
-                val g = min(largeur / 3f - 6f, hauteur / 0.98f).coerceAtLeast(30f)
+                val g = min(largeur / 3f - 6f, hauteur / (Jauge.RATIO_WIDGET + 0.40f)).coerceAtLeast(30f)
                 Mise(R.layout.widget_cuves, g, max(13f, g * 0.21f), max(9f, g * 0.105f), margeV)
             }
         }
