@@ -17,6 +17,8 @@ class ReglagesActivity : Activity() {
     private lateinit var utilisateur: EditText
     private lateinit var cle: EditText
     private lateinit var noms: List<EditText>
+    private lateinit var echelleMin: EditText
+    private lateinit var echelleMax: EditText
     private lateinit var liste: LinearLayout
     private lateinit var etat: TextView
     private lateinit var bouton: Button
@@ -28,6 +30,8 @@ class ReglagesActivity : Activity() {
         utilisateur = findViewById(R.id.champ_utilisateur)
         cle = findViewById(R.id.champ_cle)
         noms = listOf(findViewById(R.id.champ_nom1), findViewById(R.id.champ_nom2), findViewById(R.id.champ_nom3))
+        echelleMin = findViewById(R.id.champ_echelle_min)
+        echelleMax = findViewById(R.id.champ_echelle_max)
         liste = findViewById(R.id.liste_prereglages)
         etat = findViewById(R.id.etat)
         bouton = findViewById(R.id.bouton_enregistrer)
@@ -36,6 +40,8 @@ class ReglagesActivity : Activity() {
         utilisateur.setText(r.utilisateur)
         cle.setText(r.cle)
         noms.forEachIndexed { i, champ -> champ.setText(r.noms[i]) }
+        echelleMin.setText(Format.envoi(r.echelleMin))
+        echelleMax.setText(Format.envoi(r.echelleMax))
         Prereglages.lire(this).forEach { ajouterLigne(it) }
 
         findViewById<Button>(R.id.ajouter).setOnClickListener { ajouterLigne(null) }
@@ -70,18 +76,44 @@ class ReglagesActivity : Activity() {
         return resultat to ignorees
     }
 
+    /**
+     * Lit l'échelle saisie. Si elle n'est pas valable, garde l'ancienne et
+     * renvoie un message pour l'expliquer.
+     */
+    private fun lireEchelle(ancienne: Reglages): Triple<Double, Double, String?> {
+        val mini = Format.lireNombre(echelleMin.text.toString())
+        val maxi = Format.lireNombre(echelleMax.text.toString())
+        val probleme = when {
+            mini == null || maxi == null -> "indiquez un minimum et un maximum"
+            mini < ECHELLE_LIMITE_BASSE || maxi > ECHELLE_LIMITE_HAUTE ->
+                "elle doit rester entre ${Format.court(ECHELLE_LIMITE_BASSE)} et ${Format.court(ECHELLE_LIMITE_HAUTE)} °C"
+            maxi - mini < ECHELLE_ECART_MINI -> "il faut au moins ${Format.court(ECHELLE_ECART_MINI)} °C entre le minimum et le maximum"
+            else -> null
+        }
+        if (probleme != null) {
+            echelleMin.setText(Format.envoi(ancienne.echelleMin))
+            echelleMax.setText(Format.envoi(ancienne.echelleMax))
+            return Triple(ancienne.echelleMin, ancienne.echelleMax, "\n⚠ Échelle du cadran non modifiée : $probleme.")
+        }
+        return Triple(mini!!, maxi!!, null)
+    }
+
     private fun enregistrerEtTester() {
+        val (mini, maxi, alerteEchelle) = lireEchelle(Reglages.lire(this))
         val r = Reglages(
             utilisateur = utilisateur.text.toString(),
             cle = cle.text.toString(),
             noms = noms.map { it.text.toString() },
+            echelleMin = mini,
+            echelleMax = maxi,
         )
         Reglages.ecrire(this, r)
         val (prereglages, ignorees) = lirePrereglages()
         Prereglages.ecrire(this, prereglages)
         Dessin.mettreAJourTous(this)
 
-        val avertissement = if (ignorees > 0) "\n⚠ $ignorees préréglage(s) incomplet(s) ignoré(s)" else ""
+        val avertissement = (if (ignorees > 0) "\n⚠ $ignorees préréglage(s) incomplet(s) ignoré(s)" else "") +
+            (alerteEchelle ?: "")
         if (!r.complets) {
             etat.text = "Enregistré. Indiquez votre nom d'utilisateur et votre clé Adafruit IO.$avertissement"
             return

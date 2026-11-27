@@ -241,6 +241,7 @@ class MainActivity : Activity() {
         // Cadran, température, état
         val mesure = EtatCuve.lire(feeds, cuve + 1)
         val e = mesure.copy(cible = cibles[cuve], fourchette = fourchettes[cuve])
+        jauge.echelle = reglages.echelleMin to reglages.echelleMax
         jauge.etat = e
         temperature.text = if (e.temp == null) "--" else Format.temp(e.temp) + " °C"
         val couleur = when {

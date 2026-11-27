@@ -3,7 +3,7 @@
 <resources>
     <color name="fond">#FFFFFF</color>
     <color name="carte">#F7F1E8</color>
-    <color name="encre">#2A1E14</color>
+    <color name="encre">#000000</color>
     <color name="attenue">#6B5B4B</color>
     <color name="piste">#E8DCCB</color>
     <color name="graduation">#C7B49C</color>

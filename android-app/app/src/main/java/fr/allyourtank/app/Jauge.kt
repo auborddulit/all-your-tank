@@ -4,63 +4,84 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Le cadran : un demi-cercle de 0 à 30 °C, la fourchette en bande ambre,
- * l'aiguille sur la température. Même dessin dans l'appli et dans le widget.
+ * Les cadrans.
+ *  - Appli : cadran gradué en demi-cercle (un trait par degré, plus long tous les
+ *    5 °C, les nombres tous les 10 °C), la fourchette en ambre, une aiguille fine.
+ *    L'échelle va de echelleMin à echelleMax (Réglages).
+ *  - Widget : cadran à graduations fin, de 0 à 30 °C (plus bas dans ce fichier).
  */
 object Jauge {
     private const val MAX = 30.0
 
-    /** Hauteur du dessin pour une largeur donnée. */
+    /** Hauteur du grand cadran pour une largeur donnée. */
     fun hauteur(largeur: Float): Float = largeur * 0.62f
 
-    fun dessiner(canvas: Canvas, largeur: Float, e: EtatCuve, p: Palette) {
+    fun dessiner(canvas: Canvas, largeur: Float, e: EtatCuve, p: Palette, mini: Double, maxi: Double) {
         // Géométrie pensée sur une largeur de 100, puis mise à l'échelle
         val s = largeur / 100f
         val cx = 50f * s
-        val cy = 54f * s
-        val r = 40f * s
-        val cercle = RectF(cx - r, cy - r, cx + r, cy + r)
-        val trait = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 9f * s }
+        val cy = 56f * s
+        val r = 46f * s
+        val etendue = (maxi - mini).coerceAtLeast(1.0)
+        fun angle(v: Double): Double = Math.PI * (1 - ((v - mini) / etendue).coerceIn(0.0, 1.0))
+        fun x(a: Double, rayon: Float) = cx + rayon * cos(a).toFloat()
+        fun y(a: Double, rayon: Float) = cy - rayon * sin(a).toFloat()
 
-        // Piste de fond : de 180° (gauche) à 360° (droite), en passant par le haut
-        trait.color = p.piste
-        trait.strokeCap = Paint.Cap.ROUND
-        canvas.drawArc(cercle, 180f, 180f, false, trait)
-
-        // Fourchette autour de la cible
-        if (e.cible != null && e.fourchette != null) {
-            val debut = (e.cible - e.fourchette).coerceIn(0.0, MAX)
-            val fin = (e.cible + e.fourchette).coerceIn(0.0, MAX)
-            if (fin > debut) {
-                trait.color = p.bande
-                trait.strokeCap = Paint.Cap.BUTT
-                canvas.drawArc(cercle, 180f + angle(debut), angle(fin) - angle(debut), false, trait)
-            }
+        // Graduations : un trait par degré, plus long tous les 5 °C ; en ambre dans la fourchette
+        val trait = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND }
+        val premier = Math.ceil(mini).toInt()
+        val dernier = Math.floor(maxi).toInt()
+        for (v in premier..dernier) {
+            val degre = v.toDouble()
+            val dansFourchette = e.cible != null && e.fourchette != null &&
+                degre >= e.cible - e.fourchette - 1e-6 && degre <= e.cible + e.fourchette + 1e-6
+            val long = v % 5 == 0
+            val a = angle(degre)
+            val r1 = r - (if (long) 8f else 4.5f) * s
+            trait.color = if (dansFourchette) p.bande else p.graduation
+            trait.strokeWidth = (if (dansFourchette) 1.6f else 1.0f) * s
+            canvas.drawLine(x(a, r1), y(a, r1), x(a, r), y(a, r), trait)
         }
 
-        // Aiguille
+        // Nombres tous les 10 °C (tous les 5 °C si l'échelle est courte)
+        val pas = if (etendue <= 15) 5 else 10
+        val texte = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = p.attenue
+            textSize = 5.2f * s
+            textAlign = Paint.Align.CENTER
+        }
+        for (v in premier..dernier) {
+            if (v % pas != 0) continue
+            val a = angle(v.toDouble())
+            val rt = r - 14f * s
+            canvas.drawText(v.toString(), x(a, rt), y(a, rt) + 1.9f * s, texte)
+        }
+
+        // Aiguille fine, avec un petit bout de l'autre côté du centre, et un moyeu creux
         if (e.temp != null) {
             val couleur = when {
                 e.ancienne -> p.attenue
-                e.horsFourchette -> p.alerte
+                e.chaud -> p.alerte
+                e.froid -> p.froid
                 else -> p.encre
             }
-            val a = Math.PI * (1 - e.temp.coerceIn(0.0, MAX) / MAX)
+            val a = angle(e.temp)
             val aiguille = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = couleur
-                strokeWidth = 3.5f * s
+                strokeWidth = 1.3f * s
                 strokeCap = Paint.Cap.ROUND
             }
-            canvas.drawLine(cx, cy, cx + 34f * s * cos(a).toFloat(), cy - 34f * s * sin(a).toFloat(), aiguille)
-            aiguille.style = Paint.Style.FILL
-            canvas.drawCircle(cx, cy, 4.5f * s, aiguille)
+            canvas.drawLine(x(a, -5f * s), y(a, -5f * s), x(a, r - 5f * s), y(a, r - 5f * s), aiguille)
+            val moyeu = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = p.fond; style = Paint.Style.FILL }
+            canvas.drawCircle(cx, cy, 2.8f * s, moyeu)
+            aiguille.style = Paint.Style.STROKE
+            canvas.drawCircle(cx, cy, 2.8f * s, aiguille)
         }
     }
 
@@ -130,7 +151,6 @@ object Jauge {
         return flux.toByteArray()
     }
 
-    private fun angle(v: Double): Float = (v / MAX * 180.0).toFloat()
 }
 
 /** Le grand cadran de l'écran d'une cuve. */
@@ -143,6 +163,13 @@ class JaugeView(ctx: Context, attrs: AttributeSet?) : View(ctx, attrs) {
             invalidate()
         }
 
+    /** Échelle du cadran (Réglages). */
+    var echelle: Pair<Double, Double> = ECHELLE_MIN_DEFAUT to ECHELLE_MAX_DEFAUT
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     override fun onMeasure(largeur: Int, hauteur: Int) {
         val l = MeasureSpec.getSize(largeur)
         setMeasuredDimension(l, Jauge.hauteur(l.toFloat()).toInt())
@@ -150,6 +177,6 @@ class JaugeView(ctx: Context, attrs: AttributeSet?) : View(ctx, attrs) {
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        etat?.let { Jauge.dessiner(canvas, width.toFloat(), it, palette) }
+        etat?.let { Jauge.dessiner(canvas, width.toFloat(), it, palette, echelle.first, echelle.second) }
     }
 }

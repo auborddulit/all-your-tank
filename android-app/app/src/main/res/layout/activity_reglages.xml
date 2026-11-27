@@ -102,6 +102,53 @@
             android:singleLine="true"
             android:textColor="@color/encre" />
 
+        <!-- Échelle du grand cadran -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="ÉCHELLE DU CADRAN"
+            android:textColor="@color/attenue"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Températures du début et de la fin du grand cadran, en °C (au moins 5 °C d'écart). Le widget garde 0 à 30 °C."
+            android:textColor="@color/attenue"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/champ_echelle_min"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:hint="Min (°C)"
+                android:importantForAutofill="no"
+                android:inputType="numberSigned|numberDecimal"
+                android:singleLine="true"
+                android:textColor="@color/encre" />
+
+            <EditText
+                android:id="@+id/champ_echelle_max"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Max (°C)"
+                android:importantForAutofill="no"
+                android:inputType="numberSigned|numberDecimal"
+                android:singleLine="true"
+                android:textColor="@color/encre" />
+        </LinearLayout>
+
         <!-- Préréglages -->
         <TextView
             android:layout_width="wrap_content"

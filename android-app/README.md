@@ -62,8 +62,10 @@ modification de ce dossier.
 2. Entrez votre **nom d'utilisateur** et votre **clé** Adafruit IO (sur io.adafruit.com,
    icône de clé jaune).
 3. Donnez un nom à chaque cuve, par exemple le nom de la bière.
-4. Modifiez la liste des **préréglages** si besoin : nom, cible en °C, fourchette en ± °C.
-5. Touchez **Enregistrer et tester**.
+4. Réglez l'**échelle du cadran** : la température du début et de la fin du grand cadran
+   (par défaut -5 à 35 °C, au moins 5 °C d'écart). Le widget garde 0 à 30 °C.
+5. Modifiez la liste des **préréglages** si besoin : nom, cible en °C, fourchette en ± °C.
+6. Touchez **Enregistrer et tester**.
 
 La clé est gardée dans la mémoire privée de l'appli, inaccessible aux autres applis.
 Si vous perdez le téléphone, régénérez la clé sur io.adafruit.com (**Regenerate Key**),
