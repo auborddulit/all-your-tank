@@ -116,7 +116,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Températures du début et de la fin du grand cadran, en °C (au moins 5 °C d'écart). Le widget garde 0 à 30 °C."
+            android:text="Températures du début et de la fin des cadrans (appli et widget), en °C, avec au moins 5 °C d'écart."
             android:textColor="@color/attenue"
             android:textSize="13sp" />
 
@@ -164,7 +164,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="8dp"
-            android:text="Nom, température cible (°C) et fourchette (± °C)."
+            android:text="Nom, température cible (°C) et tolérance (± °C)."
             android:textColor="@color/attenue"
             android:textSize="13sp" />
 

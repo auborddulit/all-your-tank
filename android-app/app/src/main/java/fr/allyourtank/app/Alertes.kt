@@ -74,7 +74,7 @@ object Alertes {
                         val consigne = "cible ${Format.court(e.cible!!)} ± ${Format.court(e.fourchette!!)} °C"
                         Texte(
                             "$nom ${if (rappel) "toujours " else ""}$sens : ${Format.temp(e.temp!!)} °C",
-                            if (rappel) "Hors fourchette depuis ${Format.duree(depuis)} · $consigne."
+                            if (rappel) "Hors tolérance depuis ${Format.duree(depuis)} · $consigne."
                             else "${consigne.replaceFirstChar { it.uppercase() }}. Touchez pour ouvrir la cuve.",
                         )
                     }
@@ -145,7 +145,7 @@ object Alertes {
     /** Le « canal » Android : c'est lui qui suit les réglages de son, vibration et pop-up. */
     fun creerCanal(ctx: Context) {
         val canal = NotificationChannel(CANAL, "Alertes des cuves", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "Cuve hors fourchette, sonde en erreur, boîtier silencieux"
+            description = "Cuve hors tolérance, sonde en erreur, boîtier silencieux"
         }
         ctx.getSystemService(NotificationManager::class.java).createNotificationChannel(canal)
     }

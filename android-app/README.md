@@ -5,7 +5,7 @@ avec un widget pour l'écran d'accueil. Elle passe toute seule en mode clair
 (fond blanc) ou sombre (fond noir) selon le réglage du téléphone.
 
 **Le widget** : pour chaque cuve, un cadran fin à graduations (un trait par degré, la
-fourchette en ambre, une aiguille courte), la température et le nom. Une cuve trop chaude
+tolérance en ambre, une aiguille courte), la température et le nom. Une cuve trop chaude
 s'affiche en rouge, trop froide en bleu, et en gris quand il n'y a pas eu de mesure
 depuis plus de 10 minutes. Il se met à jour tout seul environ toutes les 15 minutes (le
 minimum qu'Android autorise) ; touchez une cuve pour ouvrir l'appli dessus, ce qui
@@ -16,9 +16,9 @@ poignées) : cadrans et chiffres grandissent avec lui. Très large et bas, les t
 cadrans se répartissent sur toute la largeur ; plus haut que large, les cuves
 s'empilent, une par ligne.
 
-**L'appli** : un onglet par cuve, le grand cadran, la cible et la fourchette réglables
+**L'appli** : un onglet par cuve, le grand cadran, la cible et la tolérance réglables
 avec − / +, et des **préréglages** (« Garde à froid : 2 °C ±1 »…) qui appliquent cible
-et fourchette d'un seul geste. Les réglages partent sur Adafruit IO, et le boîtier les
+et tolérance d'un seul geste. Les réglages partent sur Adafruit IO, et le boîtier les
 reçoit quelques secondes plus tard. Le bouton **↻** relit tout de suite les dernières
 mesures (le boîtier en envoie toutes les 20 secondes) : pratique quand l'e-mail d'alerte
 d'Adafruit arrive.
@@ -29,13 +29,13 @@ vibration, pop-up) :
 
 | Notification | Quand |
 |---|---|
-| « CUVE 2 trop chaude : 21,3 °C » (ou trop froide) | La température sort de cible ± fourchette |
+| « CUVE 2 trop chaude : 21,3 °C » (ou trop froide) | La température sort de cible ± tolérance |
 | « CUVE 3 : la sonde ne mesure plus » | Une seule cuve n'a plus de mesure depuis plus de 10 min |
 | « Le boîtier n'envoie plus rien » | Aucune cuve n'a de mesure depuis plus de 10 min (courant, WiFi) |
 
 Tant que le problème dure, un rappel arrive toutes les heures. Quand tout redevient
 normal, la notification s'efface d'elle-même. Touchez-la pour ouvrir l'appli sur la cuve
-concernée. Pour une cuve vide, un préréglage « Vide » avec une très grande fourchette
+concernée. Pour une cuve vide, un préréglage « Vide » avec une très grande tolérance
 évite les alertes. Au premier lancement, Android (13 et plus) demande l'autorisation
 d'afficher des notifications : répondez **Autoriser**. Le son et le pop-up se règlent
 dans les paramètres du téléphone : Applications → All your tank → Notifications →
@@ -63,8 +63,8 @@ modification de ce dossier.
    icône de clé jaune).
 3. Donnez un nom à chaque cuve, par exemple le nom de la bière.
 4. Réglez l'**échelle du cadran** : la température du début et de la fin du grand cadran
-   (par défaut -5 à 35 °C, au moins 5 °C d'écart). Le widget garde 0 à 30 °C.
-5. Modifiez la liste des **préréglages** si besoin : nom, cible en °C, fourchette en ± °C.
+   (par défaut -5 à 35 °C, au moins 5 °C d'écart). Le widget utilise la même échelle.
+5. Modifiez la liste des **préréglages** si besoin : nom, cible en °C, tolérance en ± °C.
 6. Touchez **Enregistrer et tester**.
 
 La clé est gardée dans la mémoire privée de l'appli, inaccessible aux autres applis.
@@ -82,13 +82,13 @@ puis mettez la nouvelle dans le boîtier (`secrets.h`).
 
 L'appli lit en une seule requête la dernière valeur de tous les feeds du compte
 (`GET https://io.adafruit.com/api/v2/{utilisateur}/feeds`), et écrit la consigne
-dans les feeds `cible-cuveX` et `fourchette-cuveX` (`POST …/feeds/{feed}/data`) :
+dans les feeds `cible-cuveX` et `fourchette-cuveX` (la tolérance ; `POST …/feeds/{feed}/data`) :
 
 | Feed | Rôle |
 |---|---|
 | `cuve1` … `cuve3` | Température (lue) |
 | `cible-cuve1` … | Cible (lue et écrite) |
-| `fourchette-cuve1` … | Fourchette ± (lue et écrite) |
+| `fourchette-cuve1` … | Tolérance ± (lue et écrite) |
 
 Lire ne compte pas dans la limite de 30 valeurs par minute du compte gratuit. Chaque
 réglage envoyé compte pour 2 valeurs ; avec − / +, l'appli attend 1,5 seconde après le
@@ -106,7 +106,7 @@ dernier appui avant d'envoyer, pour ne pas multiplier les envois.
 | `Palette.kt` | Couleurs du mode clair et du mode sombre |
 | `TankWidgetProvider.kt` | Le widget (événements d'Android, appuis) |
 | `Rafraichissement.kt` | Lecture régulière en tâche de fond (WorkManager) |
-| `Alertes.kt` | Notifications : hors fourchette, sonde en erreur, boîtier silencieux |
+| `Alertes.kt` | Notifications : hors tolérance, sonde en erreur, boîtier silencieux |
 | `AdafruitIO.kt` | Lecture et envoi vers Adafruit IO, mémoire des dernières valeurs |
 | `Dessin.kt` | Dessin du widget, adapté à sa taille (3 dispositions) |
 | `res/values/colors.xml`, `res/values-night/colors.xml` | Palette « Ambre », clair et sombre |

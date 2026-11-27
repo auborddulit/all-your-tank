@@ -14,10 +14,9 @@ import kotlin.math.sin
  *  - Appli : cadran gradué en demi-cercle (un trait par degré, plus long tous les
  *    5 °C, les nombres tous les 10 °C), la fourchette en ambre, une aiguille fine.
  *    L'échelle va de echelleMin à echelleMax (Réglages).
- *  - Widget : cadran à graduations fin, de 0 à 30 °C (plus bas dans ce fichier).
+ *  - Widget : cadran à graduations fin, même échelle (plus bas dans ce fichier).
  */
 object Jauge {
-    private const val MAX = 30.0
 
     /** Hauteur du grand cadran pour une largeur donnée. */
     fun hauteur(largeur: Float): Float = largeur * 0.62f
@@ -94,19 +93,21 @@ object Jauge {
      * Cadran à graduations (widget) : un trait par degré, plus long tous les 5 °C,
      * les traits de la fourchette en ambre, une aiguille courte et fine.
      */
-    fun dessinerGraduations(canvas: Canvas, largeur: Float, e: EtatCuve, p: Palette) {
+    fun dessinerGraduations(canvas: Canvas, largeur: Float, e: EtatCuve, p: Palette, mini: Double, maxi: Double) {
         val s = largeur / 100f
         val cx = 50f * s
         val cy = 52f * s
         val r = 40f * s
+        val etendue = (maxi - mini).coerceAtLeast(1.0)
+        fun angle(v: Double): Double = Math.PI * (1 - ((v - mini) / etendue).coerceIn(0.0, 1.0))
         val trait = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.BUTT }
 
-        for (v in 0..MAX.toInt()) {
+        for (v in Math.ceil(mini).toInt()..Math.floor(maxi).toInt()) {
             val degre = v.toDouble()
             val dansFourchette = e.cible != null && e.fourchette != null &&
                 degre >= e.cible - e.fourchette - 1e-6 && degre <= e.cible + e.fourchette + 1e-6
             val long = v % 5 == 0
-            val a = Math.PI * (1 - v / MAX)
+            val a = angle(degre)
             val r1 = r - (if (long) 9f else 5f) * s
             trait.color = if (dansFourchette) p.bande else p.graduation
             trait.strokeWidth = (if (dansFourchette) 2.6f else 1.8f) * s
@@ -124,7 +125,7 @@ object Jauge {
                 e.froid -> p.froid
                 else -> p.encre
             }
-            val a = Math.PI * (1 - e.temp.coerceIn(0.0, MAX) / MAX)
+            val a = angle(e.temp)
             val aiguille = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = couleur
                 strokeWidth = 1.4f * s
@@ -137,17 +138,17 @@ object Jauge {
     }
 
     /** Image du cadran à graduations, pour le widget. */
-    fun image(largeurPx: Int, e: EtatCuve, p: Palette): Bitmap {
+    fun image(largeurPx: Int, e: EtatCuve, p: Palette, mini: Double, maxi: Double): Bitmap {
         val l = largeurPx.coerceAtLeast(16)
         val b = Bitmap.createBitmap(l, hauteurGraduations(l.toFloat()).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-        dessinerGraduations(Canvas(b), l.toFloat(), e, p)
+        dessinerGraduations(Canvas(b), l.toFloat(), e, p, mini, maxi)
         return b
     }
 
     /** Même image, compressée en PNG : quelques ko, pour ne pas alourdir le widget. */
-    fun png(largeurPx: Int, e: EtatCuve, p: Palette): ByteArray {
+    fun png(largeurPx: Int, e: EtatCuve, p: Palette, mini: Double, maxi: Double): ByteArray {
         val flux = java.io.ByteArrayOutputStream()
-        image(largeurPx, e, p).compress(Bitmap.CompressFormat.PNG, 100, flux)
+        image(largeurPx, e, p, mini, maxi).compress(Bitmap.CompressFormat.PNG, 100, flux)
         return flux.toByteArray()
     }
 

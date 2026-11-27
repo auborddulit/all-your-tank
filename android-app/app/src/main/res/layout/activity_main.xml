@@ -217,7 +217,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Fourchette"
+                    android:text="Tolérance"
                     android:textColor="@color/attenue"
                     android:textSize="13sp" />
 
@@ -233,7 +233,7 @@
                         android:layout_width="44dp"
                         android:layout_height="44dp"
                         android:background="@drawable/bouton_rond"
-                        android:contentDescription="Réduire la fourchette"
+                        android:contentDescription="Réduire la tolérance"
                         android:minWidth="0dp"
                         android:text="−"
                         android:textColor="@color/encre"
@@ -254,7 +254,7 @@
                         android:layout_width="44dp"
                         android:layout_height="44dp"
                         android:background="@drawable/bouton_rond"
-                        android:contentDescription="Élargir la fourchette"
+                        android:contentDescription="Élargir la tolérance"
                         android:minWidth="0dp"
                         android:text="+"
                         android:textColor="@color/encre"

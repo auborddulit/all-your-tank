@@ -42,6 +42,8 @@ object Dessin {
     private class Donnees(
         val noms: List<String>,
         val etats: List<EtatCuve>,
+        val mini: Double,
+        val maxi: Double,
         val jour: Palette,
         val nuit: Palette,
         val nuitActuelle: Boolean,
@@ -66,8 +68,11 @@ object Dessin {
         val ids = ids(ctx)
         if (ids.isEmpty()) return
         val feeds = Cache.feeds(ctx)
+        val reglages = Reglages.lire(ctx)
         val d = Donnees(
-            noms = Reglages.lire(ctx).noms,
+            noms = reglages.noms,
+            mini = reglages.echelleMin,
+            maxi = reglages.echelleMax,
             etats = (1..NB_CUVES).map { EtatCuve.lire(feeds, it) },
             jour = Palette.pour(ctx, false),
             nuit = Palette.pour(ctx, true),
@@ -140,11 +145,11 @@ object Dessin {
             if (recent) {
                 vue.setIcon(
                     JAUGES[i], "setImageIcon",
-                    donneesIcone(Jauge.png(cadranPx, e, d.jour)),
-                    donneesIcone(Jauge.png(cadranPx, e, d.nuit)),
+                    donneesIcone(Jauge.png(cadranPx, e, d.jour, d.mini, d.maxi)),
+                    donneesIcone(Jauge.png(cadranPx, e, d.nuit, d.mini, d.maxi)),
                 )
             } else {
-                vue.setImageViewBitmap(JAUGES[i], Jauge.image(cadranPx, e, if (d.nuitActuelle) d.nuit else d.jour))
+                vue.setImageViewBitmap(JAUGES[i], Jauge.image(cadranPx, e, if (d.nuitActuelle) d.nuit else d.jour, d.mini, d.maxi))
             }
 
             // Couleur de la température selon l'état. Toujours la donner, même quand tout
